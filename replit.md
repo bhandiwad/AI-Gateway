@@ -2,6 +2,8 @@
 
 Enterprise-grade AI Gateway for BFSI (Banking, Financial Services, Insurance) with multi-provider routing, advanced guardrails, and comprehensive billing analytics.
 
+> **Full Documentation**: See [docs/AI_GATEWAY_DOCUMENTATION.md](docs/AI_GATEWAY_DOCUMENTATION.md) for complete technical documentation including F5 comparison, API reference, test users, and implementation details.
+
 ## Overview
 
 This is a full-stack AI Gateway application that provides:
