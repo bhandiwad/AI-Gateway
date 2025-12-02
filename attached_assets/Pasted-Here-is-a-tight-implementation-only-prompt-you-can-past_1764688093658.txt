@@ -1,0 +1,259 @@
+Here is a tight, implementation-only prompt you can paste into any AI to make it generate the actual Python + FastAPI + UI code, configs, architecture, and integrations for your AI Gateway.
+
+This version assumes:
+	•	Python + FastAPI backend
+	•	LiteLLM as the OSS gateway base
+	•	Guardrails AI or NeMo Guardrails for safety
+	•	PostgreSQL + Redis
+	•	A full UI built using React + Tailwind (or you can switch to Streamlit if you prefer a faster internal tool)
+	•	Kubernetes deployment
+
+Everything below is implementation-focused (models, code skeletons, API spec, UI flows, DB schemas, routing logic, guardrails integration, multi-tenancy).
+
+⸻
+
+🚀 IMPLEMENTATION-ONLY PROMPT — PYTHON AI GATEWAY WITH UI
+
+You are a senior AI platform engineer and full-stack architect.  
+I want you to build a **full implementation blueprint with code skeletons** for an **AI Gateway** with a modern frontend UI.
+
+Use:
+
+- Backend: **Python 3.11+, FastAPI**
+- OSS Gateway Base: **LiteLLM** (Python-based router; multi-provider backend)
+- Guardrails: **Guardrails AI** (or NeMo Guardrails if better for a use-case)
+- DB: **PostgreSQL** (SQLAlchemy + Alembic)
+- Cache: **Redis**
+- Frontend UI: **React + Vite + Tailwind** (clean enterprise dashboard)
+- Deployment: **Docker + Kubernetes**
+- Observability: **OpenTelemetry + Prometheus**
+- Auth: **JWT or OIDC** (multi-tenant)
+
+Your output must be implementation-heavy:
+- Provide **folder structure**, **module breakdown**, **Python code skeletons**, **FastAPI endpoints**, **middleware**, **database schemas**, **router logic**, **guardrail pipeline**, and **frontend UI components**.
+- Include **example YAML configs** for providers/models, guardrail policies, and routing rules.
+- Include **Kubernetes manifests**, **Helm values**, and **Dockerfiles**.
+- Provide **OpenAPI/Swagger spec** for the unified API.
+
+---
+
+## 🔥 1. HIGH-LEVEL SYSTEM YOU MUST IMPLEMENT
+
+Build an **AI Gateway** with the following capabilities:
+
+### Core Features
+1. Unified API for:
+   - Chat/completions (streaming + non-streaming)
+   - Embeddings
+   - Image generation
+   - Tool/function calling
+2. Routing:
+   - LiteLLM-based provider routing
+   - Cost/latency-aware model selection
+   - Fallback to local vLLM if cloud provider fails
+3. Tenant Controls:
+   - API keys per tenant
+   - Allowed models list
+   - Rate limits (Redis)
+   - Budget/cost tracking
+4. Safety:
+   - Pre-request input guardrails
+   - Post-response output guardrails
+   - Ability to block/redact/rewrite unsafe responses
+5. Observability:
+   - Token counts, latency, cost per call
+   - Per-tenant usage metrics
+6. UI:
+   - Dashboard for admin + tenants
+   - Usage visualization
+   - Model catalog browser
+   - Policy editor (guardrails + routing rules)
+   - Live testing playground (like OpenAI Playground)
+   - Tenant onboarding + key management
+
+---
+
+## 🔧 2. BACKEND IMPLEMENTATION REQUIREMENTS
+
+### Provide:
+
+### A. Backend folder structure:
+
+backend/
+app/
+api/
+v1/
+routes_chat.py
+routes_embeddings.py
+routes_admin.py
+core/
+config.py
+security.py
+rate_limit.py
+services/
+router_service.py
+guardrails_service.py
+tenancy_service.py
+usage_service.py
+provider_loader.py
+db/
+session.py
+models/
+tenant.py
+api_key.py
+usage_log.py
+policy.py
+migrations/
+schemas/
+utils/
+main.py
+
+### B. Python CODE SKELETONS (write full skeletons):
+- `router_service.py`
+- `guardrails_service.py`
+- FastAPI endpoints
+- Provider adapter wrapper around LiteLLM
+- Redis-based rate limiter
+- Usage logging middleware
+- Token + cost calculator
+- Streaming response generator
+- Guardrails AI integration example (JSON schema validation + toxicity filter)
+
+### C. Database models
+- Tenants
+- API Keys
+- Usage Records
+- Policies (routing + safety)
+- Provider configurations
+
+### D. Config files
+Provide example:
+- `models.yaml`
+- `providers.yaml`
+- `guardrails.yaml`
+- `routing_rules.yaml`
+
+### E. Deployment
+Provide:
+- Dockerfile (backend)
+- Dockerfile (frontend)
+- K8s manifests:
+  - Deployment
+  - Service
+  - Ingress
+  - ConfigMap (providers/models)
+  - Secret (provider credentials)
+  - HPA
+
+---
+
+## 🎨 3. UI IMPLEMENTATION REQUIREMENTS (REACT + TAILWIND)
+
+### Provide:
+A full UI folder structure:
+
+ui/
+src/
+components/
+Sidebar.jsx
+Header.jsx
+UsageChart.jsx
+ModelCard.jsx
+Playground.jsx
+pages/
+Dashboard.jsx
+Models.jsx
+Policies.jsx
+Playground.jsx
+Tenants.jsx
+api/
+client.js
+App.jsx
+main.jsx
+index.html
+
+### UI Features (give JSX + Tailwind snippets):
+- Login screen (JWT/OIDC)
+- Dashboard:
+  - Usage graph (tokens, cost, latency)
+  - Model usage heatmap
+- Model Catalog UI (list, filter, provider badge)
+- Guardrail/Policy editor (forms)
+- Live playground (chat UI + streaming)
+
+---
+
+## 📡 4. UNIFIED API SPEC (OpenAPI-like)
+
+Define:
+- `/v1/chat/completions`
+- `/v1/embeddings`
+- `/v1/images/generations`
+- `/v1/admin/models`
+- `/v1/admin/tenants`
+- `/v1/admin/policies`
+
+Include:
+- Request/response examples
+- Streaming spec
+- Error handling structure
+
+---
+
+## 🧩 5. GUARDRAILS PIPELINE (IMPLEMENTATION)
+
+Provide code skeletons for:
+
+### Pre-processing:
+- PII check
+- Prompt injection detection
+- Toxicity classification
+- Optional rewriting
+
+### Post-processing:
+- Schema validation
+- Safety validation
+- Redaction
+- Re-generation fallback
+
+Show how to plug Guardrails AI like:
+
+```python
+from guardrails import Guard
+
+guard = Guard.from_rail("guardrails.yaml")
+result = guard(
+   llm_output=response_text,
+   metadata={"tenant": tenant_id}
+)
+
+
+⸻
+
+📈 6. OBSERVABILITY & BILLING
+
+Provide:
+	•	Example Prometheus metrics (tokens_total, latency_seconds, errors_total)
+	•	Usage table schema
+	•	Billing report SQL example
+	•	Tracing integration (OpenTelemetry middleware)
+
+⸻
+
+🎯 7. DELIVERABLE FORMAT
+
+Your output must include:
+	1.	Backend code skeletons (Python)
+	2.	Frontend UI skeletons (React/Tailwind)
+	3.	Config YAMLs
+	4.	OpenAPI spec
+	5.	K8s manifests
+	6.	Architecture diagrams (in ASCII if needed)
+
+Everything should be implementation-level with minimal theory.
+
+Start immediately by generating the full implementation blueprint, then walk through backend → UI → configs → deployment → diagrams.
+
+---
+
+If you want, I can now **execute this prompt myself** and generate the entire implementation blueprint for you.
