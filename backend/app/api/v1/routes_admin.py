@@ -6,6 +6,11 @@ from sqlalchemy.orm import Session
 
 from backend.app.db.session import get_db
 from backend.app.core.security import create_access_token, get_current_user
+from backend.app.core.permissions import (
+    Permission, get_current_user_with_permissions, RequirePermission,
+    get_role_permissions, get_user_from_token
+)
+from backend.app.db.models.user import UserRole
 from backend.app.services.tenancy_service import tenancy_service
 from backend.app.services.usage_service import usage_service
 from backend.app.services.router_service import router_service
@@ -74,7 +79,7 @@ async def login(
     )
 
 
-@router.get("/auth/me", response_model=TenantResponse)
+@router.get("/auth/me")
 async def get_current_tenant(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -85,7 +90,23 @@ async def get_current_tenant(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Tenant not found"
         )
-    return TenantResponse.model_validate(tenant)
+    
+    user = get_user_from_token(current_user, db)
+    
+    if user:
+        user_role = user.role
+    elif tenant.is_admin:
+        user_role = UserRole.ADMIN
+    else:
+        user_role = UserRole.MANAGER
+    
+    permissions = get_role_permissions(user_role)
+    
+    tenant_data = TenantResponse.model_validate(tenant).model_dump()
+    tenant_data["role"] = user_role.value if hasattr(user_role, 'value') else user_role
+    tenant_data["permissions"] = [p.value for p in permissions]
+    
+    return tenant_data
 
 
 @router.get("/tenants", response_model=List[TenantResponse])
@@ -150,7 +171,7 @@ async def update_tenant(
 
 @router.get("/api-keys", response_model=List[APIKeyResponse])
 async def list_api_keys(
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(RequirePermission(Permission.API_KEYS_VIEW)),
     db: Session = Depends(get_db)
 ):
     tenant_id = int(current_user["sub"])
@@ -161,7 +182,7 @@ async def list_api_keys(
 @router.post("/api-keys", response_model=APIKeyCreatedResponse)
 async def create_api_key(
     key_data: APIKeyCreate,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(RequirePermission(Permission.API_KEYS_CREATE)),
     db: Session = Depends(get_db)
 ):
     tenant_id = int(current_user["sub"])
@@ -177,7 +198,7 @@ async def create_api_key(
 @router.delete("/api-keys/{key_id}")
 async def revoke_api_key(
     key_id: int,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(RequirePermission(Permission.API_KEYS_REVOKE)),
     db: Session = Depends(get_db)
 ):
     tenant_id = int(current_user["sub"])

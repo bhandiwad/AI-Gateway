@@ -7,7 +7,8 @@ import json
 import io
 
 from backend.app.db.session import get_db
-from backend.app.core.security import get_current_tenant
+from backend.app.core.security import get_current_tenant, get_current_user
+from backend.app.core.permissions import Permission, RequirePermission
 from backend.app.db.models.tenant import Tenant
 from backend.app.db.models.audit_log import AuditAction, AuditSeverity
 from backend.app.services.audit_service import audit_service
@@ -27,9 +28,11 @@ async def get_audit_logs(
     end_date: Optional[datetime] = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    tenant: Tenant = Depends(get_current_tenant),
+    current_user: dict = Depends(RequirePermission(Permission.AUDIT_VIEW)),
     db: Session = Depends(get_db)
 ):
+    tenant_id = int(current_user["sub"])
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     action_filter = AuditAction(action) if action else None
     severity_filter = AuditSeverity(severity) if severity else None
     
@@ -67,15 +70,19 @@ async def get_audit_logs(
 @router.get("/audit/summary", response_model=AuditSummary)
 async def get_audit_summary(
     days: int = Query(30, ge=1, le=365),
-    tenant: Tenant = Depends(get_current_tenant),
+    current_user: dict = Depends(RequirePermission(Permission.AUDIT_VIEW)),
     db: Session = Depends(get_db)
 ):
+    tenant_id = int(current_user["sub"])
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     summary = audit_service.get_audit_summary(db, tenant.id, days)
     return summary
 
 
 @router.get("/audit/actions")
-async def get_audit_actions():
+async def get_audit_actions(
+    current_user: dict = Depends(RequirePermission(Permission.AUDIT_VIEW))
+):
     return {
         "actions": [action.value for action in AuditAction],
         "severities": [severity.value for severity in AuditSeverity]
@@ -85,9 +92,11 @@ async def get_audit_actions():
 @router.post("/audit/export")
 async def export_audit_logs(
     request: AuditExportRequest,
-    tenant: Tenant = Depends(get_current_tenant),
+    current_user: dict = Depends(RequirePermission(Permission.AUDIT_EXPORT)),
     db: Session = Depends(get_db)
 ):
+    tenant_id = int(current_user["sub"])
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     logs = audit_service.export_audit_logs(
         db=db,
         tenant_id=tenant.id,
@@ -118,9 +127,11 @@ async def export_audit_logs(
 async def export_audit_logs_json(
     start_date: datetime,
     end_date: datetime,
-    tenant: Tenant = Depends(get_current_tenant),
+    current_user: dict = Depends(RequirePermission(Permission.AUDIT_EXPORT)),
     db: Session = Depends(get_db)
 ):
+    tenant_id = int(current_user["sub"])
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     logs = audit_service.export_audit_logs(
         db=db,
         tenant_id=tenant.id,
@@ -150,9 +161,11 @@ async def export_audit_logs_json(
 @router.get("/audit/security-events")
 async def get_security_events(
     days: int = Query(7, ge=1, le=90),
-    tenant: Tenant = Depends(get_current_tenant),
+    current_user: dict = Depends(RequirePermission(Permission.AUDIT_VIEW)),
     db: Session = Depends(get_db)
 ):
+    tenant_id = int(current_user["sub"])
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     start_date = datetime.utcnow() - timedelta(days=days)
     
     security_actions = [

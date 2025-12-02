@@ -14,25 +14,25 @@ import {
   GitBranch,
   Building2
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth, PERMISSIONS } from '../contexts/AuthContext';
 
 const navItems = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/router', label: 'Router', icon: GitBranch },
-  { path: '/models', label: 'Models', icon: Layers },
-  { path: '/playground', label: 'Playground', icon: MessageSquare },
-  { path: '/guardrails', label: 'Guardrails', icon: Shield },
-  { path: '/api-keys', label: 'API Keys', icon: Key },
-  { path: '/users', label: 'Users', icon: Users },
-  { path: '/billing', label: 'Billing', icon: DollarSign },
-  { path: '/audit-logs', label: 'Audit Logs', icon: FileText },
+  { path: '/', label: 'Dashboard', icon: LayoutDashboard, permission: PERMISSIONS.DASHBOARD_VIEW },
+  { path: '/router', label: 'Router', icon: GitBranch, permission: PERMISSIONS.ROUTER_VIEW },
+  { path: '/models', label: 'Models', icon: Layers, permission: PERMISSIONS.DASHBOARD_VIEW },
+  { path: '/playground', label: 'Playground', icon: MessageSquare, permission: PERMISSIONS.GATEWAY_USE },
+  { path: '/guardrails', label: 'Guardrails', icon: Shield, permission: PERMISSIONS.GUARDRAILS_VIEW },
+  { path: '/api-keys', label: 'API Keys', icon: Key, permission: PERMISSIONS.API_KEYS_VIEW },
+  { path: '/users', label: 'Users', icon: Users, permission: PERMISSIONS.USERS_VIEW },
+  { path: '/billing', label: 'Billing', icon: DollarSign, permission: PERMISSIONS.BILLING_VIEW },
+  { path: '/audit-logs', label: 'Audit Logs', icon: FileText, permission: PERMISSIONS.AUDIT_VIEW },
   { path: '/tenants', label: 'Tenants', icon: Building2, adminOnly: true },
-  { path: '/settings', label: 'Settings', icon: Settings },
+  { path: '/settings', label: 'Settings', icon: Settings, permission: PERMISSIONS.SETTINGS_VIEW },
 ];
 
 export default function Sidebar({ onNavClick }) {
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, hasPermission, role } = useAuth();
 
   const handleNavClick = () => {
     if (onNavClick) {
@@ -65,6 +65,7 @@ export default function Sidebar({ onNavClick }) {
         <ul className="space-y-1">
           {navItems.map((item) => {
             if (item.adminOnly && !user?.is_admin) return null;
+            if (item.permission && !hasPermission(item.permission)) return null;
             
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
@@ -97,6 +98,16 @@ export default function Sidebar({ onNavClick }) {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">{user?.name}</p>
             <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+            {role && (
+              <span className={`text-xs px-2 py-0.5 rounded mt-1 inline-block ${
+                role === 'admin' ? 'bg-purple-600 text-purple-100' :
+                role === 'manager' ? 'bg-blue-600 text-blue-100' :
+                role === 'user' ? 'bg-green-600 text-green-100' :
+                'bg-gray-600 text-gray-100'
+              }`}>
+                {role.charAt(0).toUpperCase() + role.slice(1)}
+              </span>
+            )}
           </div>
         </div>
         <button

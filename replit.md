@@ -165,8 +165,42 @@ Optional:
 - NVIDIA NeMo Guardrails for advanced safety
 - Mobile-first responsive design
 
+## Role-Based Access Control (RBAC)
+
+The gateway implements enterprise-grade RBAC with 4 user roles:
+
+### Roles and Permissions
+
+| Role | Description | Key Permissions |
+|------|-------------|-----------------|
+| **Admin** | Full system access | All permissions including user deletion, guardrails editing, settings modification |
+| **Manager** | Operational access | Create API keys, view billing, manage users, view audit logs, test guardrails |
+| **User** | Gateway consumers | Use AI gateway, view dashboard, view own API keys |
+| **Viewer** | Read-only access | View dashboard, billing, audit logs, guardrails, router config |
+
+### Permission Categories
+- `api_keys:*` - API key management (view, create, revoke)
+- `billing:*` - Billing access (view, export, invoice)
+- `audit:*` - Audit log access (view, export)
+- `users:*` - User management (view, create, edit, delete)
+- `guardrails:*` - Guardrail config (view, edit, test)
+- `router:*` - Router config (view, edit)
+- `gateway:use` - Use AI gateway APIs
+- `dashboard:view` - View dashboard
+- `settings:*` - Settings management (view, edit)
+
+### Implementation
+- Backend: `backend/app/core/permissions.py` - Permission decorators and role matrix
+- Frontend: `ui/src/contexts/AuthContext.jsx` - Permission hooks (hasPermission, hasAnyPermission)
+- Navigation: Sidebar shows/hides menu items based on user permissions
+
 ## Recent Changes
 
+- **Implemented RBAC system** with role-based permissions for all admin endpoints
+- Added permission decorators for backend route protection
+- Frontend AuthContext now includes role and permissions from /auth/me endpoint
+- Sidebar navigation hides pages user doesn't have permission to access
+- User role badge displayed in sidebar
 - Added User management system with roles (admin, manager, user, viewer)
 - Added per-user usage tracking for billing
 - Implemented comprehensive audit logging with recursive PII sanitization

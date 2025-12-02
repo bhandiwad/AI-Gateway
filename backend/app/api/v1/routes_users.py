@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from backend.app.db.session import get_db
-from backend.app.core.security import get_current_tenant
+from backend.app.core.security import get_current_tenant, get_current_user
+from backend.app.core.permissions import Permission, RequirePermission
 from backend.app.db.models.tenant import Tenant
 from backend.app.db.models.user import UserRole, UserStatus
 from backend.app.services.user_service import user_service
@@ -21,9 +22,11 @@ async def list_users(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     status: Optional[str] = None,
-    tenant: Tenant = Depends(get_current_tenant),
+    current_user: dict = Depends(RequirePermission(Permission.USERS_VIEW)),
     db: Session = Depends(get_db)
 ):
+    tenant_id = int(current_user["sub"])
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     status_filter = UserStatus(status) if status else None
     users = user_service.get_users_by_tenant(
         db, tenant.id, skip=skip, limit=limit, status=status_filter
@@ -34,9 +37,11 @@ async def list_users(
 @router.get("/users/count")
 async def count_users(
     status: Optional[str] = None,
-    tenant: Tenant = Depends(get_current_tenant),
+    current_user: dict = Depends(RequirePermission(Permission.USERS_VIEW)),
     db: Session = Depends(get_db)
 ):
+    tenant_id = int(current_user["sub"])
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     status_filter = UserStatus(status) if status else None
     total = user_service.count_users_by_tenant(db, tenant.id, status=status_filter)
     active = user_service.count_users_by_tenant(db, tenant.id, status=UserStatus.ACTIVE)
@@ -46,9 +51,11 @@ async def count_users(
 @router.post("/users", response_model=UserResponse)
 async def create_user(
     user_data: UserCreate,
-    tenant: Tenant = Depends(get_current_tenant),
+    current_user: dict = Depends(RequirePermission(Permission.USERS_CREATE)),
     db: Session = Depends(get_db)
 ):
+    tenant_id = int(current_user["sub"])
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     existing = user_service.get_user_by_email(db, tenant.id, user_data.email)
     if existing:
         raise HTTPException(status_code=400, detail="User with this email already exists")
@@ -81,9 +88,11 @@ async def create_user(
 @router.get("/users/{user_id}", response_model=UserResponse)
 async def get_user(
     user_id: int,
-    tenant: Tenant = Depends(get_current_tenant),
+    current_user: dict = Depends(RequirePermission(Permission.USERS_VIEW)),
     db: Session = Depends(get_db)
 ):
+    tenant_id = int(current_user["sub"])
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     user = user_service.get_user_by_id(db, user_id)
     if not user or user.tenant_id != tenant.id:
         raise HTTPException(status_code=404, detail="User not found")
@@ -94,9 +103,11 @@ async def get_user(
 async def update_user(
     user_id: int,
     updates: UserUpdate,
-    tenant: Tenant = Depends(get_current_tenant),
+    current_user: dict = Depends(RequirePermission(Permission.USERS_EDIT)),
     db: Session = Depends(get_db)
 ):
+    tenant_id = int(current_user["sub"])
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     user = user_service.get_user_by_id(db, user_id)
     if not user or user.tenant_id != tenant.id:
         raise HTTPException(status_code=404, detail="User not found")
@@ -132,9 +143,11 @@ async def update_user(
 @router.delete("/users/{user_id}")
 async def delete_user(
     user_id: int,
-    tenant: Tenant = Depends(get_current_tenant),
+    current_user: dict = Depends(RequirePermission(Permission.USERS_DELETE)),
     db: Session = Depends(get_db)
 ):
+    tenant_id = int(current_user["sub"])
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     user = user_service.get_user_by_id(db, user_id)
     if not user or user.tenant_id != tenant.id:
         raise HTTPException(status_code=404, detail="User not found")
@@ -159,9 +172,11 @@ async def delete_user(
 async def get_user_usage(
     user_id: int,
     days: int = Query(30, ge=1, le=365),
-    tenant: Tenant = Depends(get_current_tenant),
+    current_user: dict = Depends(RequirePermission(Permission.USERS_VIEW)),
     db: Session = Depends(get_db)
 ):
+    tenant_id = int(current_user["sub"])
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     user = user_service.get_user_by_id(db, user_id)
     if not user or user.tenant_id != tenant.id:
         raise HTTPException(status_code=404, detail="User not found")
@@ -172,9 +187,11 @@ async def get_user_usage(
 
 @router.post("/users/reset-spend")
 async def reset_monthly_spend(
-    tenant: Tenant = Depends(get_current_tenant),
+    current_user: dict = Depends(RequirePermission(Permission.BILLING_INVOICE)),
     db: Session = Depends(get_db)
 ):
+    tenant_id = int(current_user["sub"])
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     count = user_service.reset_monthly_spend(db, tenant.id)
     
     audit_service.log(

@@ -5,7 +5,8 @@ from datetime import datetime, timedelta
 import io
 
 from backend.app.db.session import get_db
-from backend.app.core.security import get_current_tenant
+from backend.app.core.security import get_current_tenant, get_current_user
+from backend.app.core.permissions import Permission, RequirePermission
 from backend.app.db.models.tenant import Tenant
 from backend.app.services.billing_service import billing_service
 from backend.app.services.audit_service import audit_service
@@ -22,9 +23,11 @@ router = APIRouter()
 async def get_billing_summary(
     start_date: datetime = None,
     end_date: datetime = None,
-    tenant: Tenant = Depends(get_current_tenant),
+    current_user: dict = Depends(RequirePermission(Permission.BILLING_VIEW)),
     db: Session = Depends(get_db)
 ):
+    tenant_id = int(current_user["sub"])
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     if not end_date:
         end_date = datetime.utcnow()
     if not start_date:
@@ -45,9 +48,10 @@ async def get_user_billing(
     user_id: int,
     start_date: datetime = None,
     end_date: datetime = None,
-    tenant: Tenant = Depends(get_current_tenant),
+    current_user: dict = Depends(RequirePermission(Permission.BILLING_VIEW)),
     db: Session = Depends(get_db)
 ):
+    tenant_id = int(current_user["sub"])
     if not end_date:
         end_date = datetime.utcnow()
     if not start_date:
@@ -69,9 +73,11 @@ async def get_user_billing(
 @router.post("/billing/invoice")
 async def generate_invoice(
     request: InvoiceRequest,
-    tenant: Tenant = Depends(get_current_tenant),
+    current_user: dict = Depends(RequirePermission(Permission.BILLING_INVOICE)),
     db: Session = Depends(get_db)
 ):
+    tenant_id = int(current_user["sub"])
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     invoice = billing_service.generate_invoice(
         db=db,
         tenant_id=tenant.id,
@@ -100,9 +106,11 @@ async def export_usage_csv(
     start_date: datetime,
     end_date: datetime,
     include_user_details: bool = True,
-    tenant: Tenant = Depends(get_current_tenant),
+    current_user: dict = Depends(RequirePermission(Permission.BILLING_EXPORT)),
     db: Session = Depends(get_db)
 ):
+    tenant_id = int(current_user["sub"])
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     csv_content = billing_service.export_usage_csv(
         db=db,
         tenant_id=tenant.id,
@@ -134,9 +142,11 @@ async def export_usage_csv(
 @router.get("/billing/forecast", response_model=CostForecast)
 async def get_cost_forecast(
     days: int = Query(30, ge=7, le=90),
-    tenant: Tenant = Depends(get_current_tenant),
+    current_user: dict = Depends(RequirePermission(Permission.BILLING_VIEW)),
     db: Session = Depends(get_db)
 ):
+    tenant_id = int(current_user["sub"])
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     forecast = billing_service.get_cost_forecast(
         db=db,
         tenant_id=tenant.id,
@@ -150,9 +160,11 @@ async def get_cost_forecast(
 async def get_model_costs(
     start_date: datetime = None,
     end_date: datetime = None,
-    tenant: Tenant = Depends(get_current_tenant),
+    current_user: dict = Depends(RequirePermission(Permission.BILLING_VIEW)),
     db: Session = Depends(get_db)
 ):
+    tenant_id = int(current_user["sub"])
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     if not end_date:
         end_date = datetime.utcnow()
     if not start_date:
@@ -178,9 +190,11 @@ async def get_model_costs(
 async def get_user_costs(
     start_date: datetime = None,
     end_date: datetime = None,
-    tenant: Tenant = Depends(get_current_tenant),
+    current_user: dict = Depends(RequirePermission(Permission.BILLING_VIEW)),
     db: Session = Depends(get_db)
 ):
+    tenant_id = int(current_user["sub"])
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     if not end_date:
         end_date = datetime.utcnow()
     if not start_date:

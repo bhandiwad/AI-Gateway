@@ -7,6 +7,7 @@ import os
 
 from backend.app.db.session import get_db
 from backend.app.core.security import get_current_user
+from backend.app.core.permissions import Permission, RequirePermission
 from backend.app.services.router_service import router_service
 from backend.app.db.models.usage_log import UsageLog
 
@@ -72,7 +73,7 @@ def load_routing_config():
 
 @router.get("/router/providers")
 async def get_providers(
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(RequirePermission(Permission.ROUTER_VIEW)),
     db: Session = Depends(get_db)
 ):
     """Get all configured providers with their status"""
@@ -116,7 +117,7 @@ async def get_providers(
 
 @router.get("/router/config")
 async def get_router_config(
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(RequirePermission(Permission.ROUTER_VIEW)),
     db: Session = Depends(get_db)
 ):
     """Get current routing configuration"""
@@ -161,7 +162,7 @@ async def get_router_config(
 
 @router.get("/router/fallback-chain")
 async def get_fallback_chain(
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(RequirePermission(Permission.ROUTER_VIEW)),
     db: Session = Depends(get_db)
 ):
     """Get the current fallback provider chain"""
@@ -191,7 +192,7 @@ async def get_fallback_chain(
 
 @router.post("/router/health-check")
 async def check_provider_health(
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(RequirePermission(Permission.ROUTER_VIEW)),
     db: Session = Depends(get_db)
 ):
     """Check health status of all providers"""
@@ -233,7 +234,7 @@ async def check_provider_health(
 @router.post("/router/test")
 async def test_routing(
     model: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(RequirePermission(Permission.GATEWAY_USE)),
     db: Session = Depends(get_db)
 ):
     """Test routing to a specific model"""
@@ -271,7 +272,7 @@ async def test_routing(
 
 @router.get("/router/stats")
 async def get_routing_stats(
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(RequirePermission(Permission.ROUTER_VIEW)),
     db: Session = Depends(get_db)
 ):
     """Get routing statistics"""
