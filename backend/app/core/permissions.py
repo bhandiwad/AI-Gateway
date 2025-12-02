@@ -127,14 +127,27 @@ def get_user_from_token(token_data: dict, db) -> Optional[User]:
     
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     if tenant and tenant.email == email:
-        user = User(
+        existing_user = db.query(User).filter(
+            User.tenant_id == tenant_id,
+            User.email == email
+        ).first()
+        
+        if existing_user:
+            if existing_user.status != UserStatus.ACTIVE:
+                return None
+            return existing_user
+        
+        new_user = User(
             tenant_id=tenant_id,
             email=email,
             name=tenant.name,
             role=UserRole.ADMIN if tenant.is_admin else UserRole.MANAGER,
             status=UserStatus.ACTIVE
         )
-        return user
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        return new_user
     
     return None
 
