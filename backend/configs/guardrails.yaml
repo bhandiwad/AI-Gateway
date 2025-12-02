@@ -1,0 +1,75 @@
+guardrails:
+  input_validation:
+    pii_detection:
+      enabled: true
+      action: redact
+      patterns:
+        - email
+        - phone
+        - ssn
+        - credit_card
+        - ip_address
+
+    prompt_injection:
+      enabled: true
+      action: block
+      log_attempts: true
+
+    toxicity:
+      enabled: false
+      action: warn
+      threshold: 0.7
+
+    content_length:
+      enabled: true
+      max_chars: 100000
+      action: block
+
+  output_validation:
+    pii_detection:
+      enabled: true
+      action: redact
+
+    schema_validation:
+      enabled: false
+      schemas: {}
+
+    content_filter:
+      enabled: false
+      blocked_patterns: []
+
+  global_settings:
+    log_all_triggers: true
+    allow_bypass_for_admins: false
+    default_action: allow
+
+policies:
+  - name: default
+    description: Default guardrail policy for all tenants
+    is_active: true
+    priority: 0
+    config:
+      block_prompt_injection: true
+      pii_action: redact
+      output_pii_action: redact
+      block_toxic: false
+
+  - name: strict
+    description: Strict policy with all guardrails enabled
+    is_active: true
+    priority: 1
+    config:
+      block_prompt_injection: true
+      pii_action: block
+      output_pii_action: block
+      block_toxic: true
+
+  - name: permissive
+    description: Minimal guardrails for trusted tenants
+    is_active: true
+    priority: 2
+    config:
+      block_prompt_injection: true
+      pii_action: warn
+      output_pii_action: warn
+      block_toxic: false
