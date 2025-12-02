@@ -130,6 +130,7 @@ class SSOService:
         
         state_data = {
             "tenant_id": sso_config.tenant_id,
+            "provider_name": sso_config.provider_name,
             "code_verifier": code_verifier,
             "redirect_uri": redirect_uri,
             "nonce": nonce,
@@ -156,7 +157,8 @@ class SSOService:
         self,
         sso_config: SSOConfig,
         code: str,
-        state: str
+        state: str,
+        expected_provider: str
     ) -> Dict[str, Any]:
         state_data = await self._get_state(state)
         if not state_data:
@@ -165,6 +167,10 @@ class SSOService:
         created_at = datetime.fromisoformat(state_data["created_at"])
         if datetime.utcnow() - created_at > timedelta(seconds=self.STATE_EXPIRY_SECONDS):
             raise ValueError("State has expired")
+        
+        stored_provider = state_data.get("provider_name")
+        if stored_provider != expected_provider:
+            raise ValueError("Provider mismatch - possible replay attack")
         
         code_verifier = state_data["code_verifier"]
         redirect_uri = state_data["redirect_uri"]
@@ -267,10 +273,11 @@ class SSOService:
         db: Session,
         sso_config: SSOConfig,
         code: str,
-        state: str
+        state: str,
+        provider_name: str
     ) -> Dict[str, Any]:
         tokens = await self.exchange_code_for_tokens(
-            sso_config, code, state
+            sso_config, code, state, provider_name
         )
         
         id_token = tokens.get("id_token")

@@ -366,7 +366,7 @@ async def sso_callback(
     
     try:
         auth_result = await sso_service.authenticate_sso_user(
-            db, config, code, state
+            db, config, code, state, provider_name
         )
         return auth_result
     except ValueError as e:
