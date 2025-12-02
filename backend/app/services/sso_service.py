@@ -2,20 +2,56 @@ import httpx
 import secrets
 import hashlib
 import base64
+import json
 from urllib.parse import urlencode
 from typing import Optional, Dict, Any
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
+from datetime import datetime, timedelta
 
 from backend.app.db.models.sso_config import SSOConfig, SSOProtocol
 from backend.app.db.models.tenant import Tenant
 from backend.app.core.security import create_access_token
+from backend.app.core.config import settings
 
 
 class SSOService:
+    STATE_EXPIRY_SECONDS = 600
+    
     def __init__(self):
-        self._state_store: Dict[str, dict] = {}
-        self._nonce_store: Dict[str, str] = {}
+        self._redis = None
+        self._local_store: Dict[str, str] = {}
+    
+    async def _get_redis(self):
+        if self._redis is None and settings.REDIS_URL:
+            import redis.asyncio as aioredis
+            self._redis = await aioredis.from_url(settings.REDIS_URL)
+        return self._redis
+    
+    async def _store_state(self, key: str, data: dict) -> None:
+        serialized = json.dumps(data)
+        redis_client = await self._get_redis()
+        if redis_client:
+            await redis_client.setex(
+                f"sso_state:{key}",
+                self.STATE_EXPIRY_SECONDS,
+                serialized
+            )
+        else:
+            self._local_store[key] = serialized
+    
+    async def _get_state(self, key: str) -> Optional[dict]:
+        redis_client = await self._get_redis()
+        if redis_client:
+            data = await redis_client.get(f"sso_state:{key}")
+            if data:
+                await redis_client.delete(f"sso_state:{key}")
+                return json.loads(data)
+        else:
+            data = self._local_store.pop(key, None)
+            if data:
+                return json.loads(data)
+        return None
     
     def get_sso_config(self, db: Session, tenant_id: int) -> Optional[SSOConfig]:
         return db.query(SSOConfig).filter(SSOConfig.tenant_id == tenant_id).first()
@@ -25,6 +61,17 @@ class SSOService:
             SSOConfig.provider_name == provider_name,
             SSOConfig.enabled == True
         ).first()
+    
+    def get_tenant_by_domain(self, db: Session, domain: str) -> Optional[Tenant]:
+        return db.query(Tenant).filter(
+            Tenant.email.ilike(f"%@{domain}")
+        ).first()
+    
+    def get_sso_config_by_tenant_name(self, db: Session, tenant_name: str) -> Optional[SSOConfig]:
+        tenant = db.query(Tenant).filter(Tenant.name == tenant_name).first()
+        if tenant:
+            return self.get_sso_config(db, tenant.id)
+        return None
     
     def create_sso_config(
         self,
@@ -67,10 +114,11 @@ class SSOService:
         db.commit()
         return True
     
-    def generate_authorization_url(
+    async def generate_authorization_url(
         self,
         sso_config: SSOConfig,
-        redirect_uri: str
+        redirect_uri: str,
+        final_redirect: Optional[str] = None
     ) -> tuple:
         state = secrets.token_urlsafe(32)
         nonce = secrets.token_urlsafe(32)
@@ -80,12 +128,15 @@ class SSOService:
             hashlib.sha256(code_verifier.encode()).digest()
         ).rstrip(b'=').decode()
         
-        self._state_store[state] = {
+        state_data = {
             "tenant_id": sso_config.tenant_id,
             "code_verifier": code_verifier,
-            "redirect_uri": redirect_uri
+            "redirect_uri": redirect_uri,
+            "nonce": nonce,
+            "final_redirect": final_redirect or redirect_uri,
+            "created_at": datetime.utcnow().isoformat()
         }
-        self._nonce_store[nonce] = str(sso_config.tenant_id)
+        await self._store_state(state, state_data)
         
         params = {
             "client_id": sso_config.client_id,
@@ -99,20 +150,26 @@ class SSOService:
         }
         
         auth_url = f"{sso_config.authorization_endpoint}?{urlencode(params)}"
-        return auth_url, state, nonce
+        return auth_url, state
     
     async def exchange_code_for_tokens(
         self,
         sso_config: SSOConfig,
         code: str,
-        state: str,
-        redirect_uri: str
+        state: str
     ) -> Dict[str, Any]:
-        if state not in self._state_store:
-            raise ValueError("Invalid state parameter")
+        state_data = await self._get_state(state)
+        if not state_data:
+            raise ValueError("Invalid or expired state parameter")
         
-        state_data = self._state_store.pop(state)
+        created_at = datetime.fromisoformat(state_data["created_at"])
+        if datetime.utcnow() - created_at > timedelta(seconds=self.STATE_EXPIRY_SECONDS):
+            raise ValueError("State has expired")
+        
         code_verifier = state_data["code_verifier"]
+        redirect_uri = state_data["redirect_uri"]
+        nonce = state_data["nonce"]
+        final_redirect = state_data.get("final_redirect", redirect_uri)
         
         token_data = {
             "grant_type": "authorization_code",
@@ -133,7 +190,11 @@ class SSOService:
             if response.status_code != 200:
                 raise ValueError(f"Token exchange failed: {response.text}")
             
-            return response.json()
+            tokens = response.json()
+            tokens["_nonce"] = nonce
+            tokens["_final_redirect"] = final_redirect
+            tokens["_tenant_id"] = state_data["tenant_id"]
+            return tokens
     
     async def get_user_info(
         self,
@@ -154,7 +215,8 @@ class SSOService:
     async def validate_id_token(
         self,
         sso_config: SSOConfig,
-        id_token: str
+        id_token: str,
+        expected_nonce: Optional[str] = None
     ) -> Dict[str, Any]:
         async with httpx.AsyncClient() as client:
             jwks_response = await client.get(sso_config.jwks_uri)
@@ -180,6 +242,9 @@ class SSOService:
                 issuer=sso_config.issuer_url
             )
             
+            if expected_nonce and payload.get("nonce") != expected_nonce:
+                raise ValueError("Nonce mismatch - possible replay attack")
+            
             return payload
             
         except JWTError as e:
@@ -202,18 +267,19 @@ class SSOService:
         db: Session,
         sso_config: SSOConfig,
         code: str,
-        state: str,
-        redirect_uri: str
+        state: str
     ) -> Dict[str, Any]:
         tokens = await self.exchange_code_for_tokens(
-            sso_config, code, state, redirect_uri
+            sso_config, code, state
         )
         
         id_token = tokens.get("id_token")
         access_token = tokens.get("access_token")
+        expected_nonce = tokens.get("_nonce")
+        final_redirect = tokens.get("_final_redirect")
         
         if id_token:
-            user_claims = await self.validate_id_token(sso_config, id_token)
+            user_claims = await self.validate_id_token(sso_config, id_token, expected_nonce)
         else:
             user_claims = await self.get_user_info(sso_config, access_token)
         
@@ -236,7 +302,8 @@ class SSOService:
             "access_token": gateway_token,
             "token_type": "bearer",
             "user": user_info,
-            "tenant_id": str(tenant.id)
+            "tenant_id": str(tenant.id),
+            "redirect_to": final_redirect
         }
     
     async def discover_oidc_config(self, issuer_url: str) -> Dict[str, Any]:
@@ -258,6 +325,16 @@ class SSOService:
                 "jwks_uri": config.get("jwks_uri"),
                 "scopes_supported": config.get("scopes_supported", [])
             }
+    
+    def list_enabled_providers(self, db: Session) -> list:
+        configs = db.query(SSOConfig).filter(SSOConfig.enabled == True).all()
+        return [
+            {
+                "provider_name": cfg.provider_name,
+                "tenant_id": cfg.tenant_id
+            }
+            for cfg in configs
+        ]
 
 
 sso_service = SSOService()

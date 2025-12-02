@@ -320,6 +320,12 @@ async def discover_oidc_provider(
         )
 
 
+@router.get("/auth/sso/providers")
+async def list_sso_providers(db: Session = Depends(get_db)):
+    providers = sso_service.list_enabled_providers(db)
+    return {"providers": providers}
+
+
 @router.post("/auth/sso/initiate")
 async def initiate_sso_login(
     request: SSOLoginInitiate,
@@ -333,7 +339,7 @@ async def initiate_sso_login(
             detail=f"SSO provider '{request.provider_name}' not found or not enabled"
         )
     
-    auth_url, state, nonce = sso_service.generate_authorization_url(
+    auth_url, state = await sso_service.generate_authorization_url(
         config, request.redirect_uri
     )
     
@@ -347,7 +353,6 @@ async def initiate_sso_login(
 async def sso_callback(
     code: str = Query(...),
     state: str = Query(...),
-    redirect_uri: str = Query(...),
     provider_name: str = Query(...),
     db: Session = Depends(get_db)
 ):
@@ -361,9 +366,9 @@ async def sso_callback(
     
     try:
         auth_result = await sso_service.authenticate_sso_user(
-            db, config, code, state, redirect_uri
+            db, config, code, state
         )
-        return SSOAuthResponse(**auth_result)
+        return auth_result
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
