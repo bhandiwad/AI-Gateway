@@ -44,19 +44,19 @@ export default function RouterConfig() {
       setError(null);
 
       const [providersRes, configRes, fallbackRes, modelsRes, statsRes] = await Promise.all([
-        api.get('/api/v1/admin/router/providers', {
+        api.get('/admin/router/providers', {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        api.get('/api/v1/admin/router/config', {
+        api.get('/admin/router/config', {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        api.get('/api/v1/admin/router/fallback-chain', {
+        api.get('/admin/router/fallback-chain', {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        api.get('/api/v1/models', {
+        api.get('/models', {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        api.get('/api/v1/admin/router/stats', {
+        api.get('/admin/router/stats', {
           headers: { Authorization: `Bearer ${token}` }
         }).catch(() => ({ data: { stats: [] } }))
       ]);
@@ -78,7 +78,7 @@ export default function RouterConfig() {
   const checkHealth = async () => {
     try {
       setCheckingHealth(true);
-      const response = await api.post('/api/v1/admin/router/health-check', {}, {
+      const response = await api.post('/admin/router/health-check', {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setHealthChecks(response.data.health_checks || []);
@@ -97,7 +97,7 @@ export default function RouterConfig() {
       setTesting(true);
       setTestResult(null);
 
-      const response = await api.post('/api/v1/chat/completions', {
+      const response = await api.post('/chat/completions', {
         model: testModel,
         messages: [{ role: 'user', content: 'Test routing - respond with OK' }],
         max_tokens: 10

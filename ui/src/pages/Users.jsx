@@ -56,7 +56,7 @@ export default function Users() {
       setLoading(true);
       setError(null);
 
-      const response = await api.get('/api/v1/admin/users', {
+      const response = await api.get('/admin/users', {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -74,7 +74,7 @@ export default function Users() {
       setSaving(true);
       setError(null);
 
-      await api.post('/api/v1/admin/users', formData, {
+      await api.post('/admin/users', formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -99,7 +99,7 @@ export default function Users() {
         delete updateData.password;
       }
 
-      await api.put(`/api/v1/admin/users/${selectedUser.id}`, updateData, {
+      await api.put(`/admin/users/${selectedUser.id}`, updateData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -119,7 +119,7 @@ export default function Users() {
     if (!confirm('Are you sure you want to delete this user?')) return;
 
     try {
-      await api.delete(`/api/v1/admin/users/${userId}`, {
+      await api.delete(`/admin/users/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchUsers();

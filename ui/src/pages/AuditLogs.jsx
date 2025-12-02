@@ -69,13 +69,13 @@ export default function AuditLogs() {
       params.append('limit', '100');
 
       const [logsRes, summaryRes, securityRes] = await Promise.all([
-        api.get(`/api/v1/admin/audit/logs?${params.toString()}`, {
+        api.get(`/admin/audit/logs?${params.toString()}`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        api.get('/api/v1/admin/audit/summary', {
+        api.get('/admin/audit/summary', {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        api.get('/api/v1/admin/audit/security-events?limit=10', {
+        api.get('/admin/audit/security-events?limit=10', {
           headers: { Authorization: `Bearer ${token}` }
         })
       ]);
@@ -94,7 +94,7 @@ export default function AuditLogs() {
   const handleExport = async (format) => {
     try {
       setExporting(true);
-      const response = await api.post('/api/v1/admin/audit/export', {
+      const response = await api.post('/admin/audit/export', {
         format,
         start_date: filters.start_date || null,
         end_date: filters.end_date || null,

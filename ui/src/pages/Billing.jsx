@@ -35,10 +35,10 @@ export default function Billing() {
       setError(null);
 
       const [summaryRes, forecastRes] = await Promise.all([
-        api.get(`/api/v1/admin/billing/summary?period=${period}`, {
+        api.get(`/admin/billing/summary?period=${period}`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        api.get('/api/v1/admin/billing/forecast', {
+        api.get('/admin/billing/forecast', {
           headers: { Authorization: `Bearer ${token}` }
         })
       ]);
@@ -60,7 +60,7 @@ export default function Billing() {
   const generateInvoice = async () => {
     try {
       setGenerating(true);
-      const response = await api.post('/api/v1/admin/billing/invoice', {
+      const response = await api.post('/admin/billing/invoice', {
         period
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -83,7 +83,7 @@ export default function Billing() {
 
   const exportCSV = async () => {
     try {
-      const response = await api.get(`/api/v1/admin/billing/export/csv?period=${period}`, {
+      const response = await api.get(`/admin/billing/export/csv?period=${period}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

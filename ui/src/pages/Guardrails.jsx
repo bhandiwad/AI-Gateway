@@ -37,13 +37,13 @@ export default function Guardrails() {
       setError(null);
 
       const [guardrailsRes, bfsiRes, policiesRes] = await Promise.all([
-        api.get('/api/v1/admin/guardrails', {
+        api.get('/admin/guardrails', {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        api.get('/api/v1/admin/guardrails/bfsi', {
+        api.get('/admin/guardrails/bfsi', {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        api.get('/api/v1/admin/guardrails/policies', {
+        api.get('/admin/guardrails/policies', {
           headers: { Authorization: `Bearer ${token}` }
         })
       ]);
@@ -66,7 +66,7 @@ export default function Guardrails() {
       setTesting(true);
       setTestResult(null);
 
-      const response = await api.post('/api/v1/admin/guardrails/test', {
+      const response = await api.post('/admin/guardrails/test', {
         text: testInput,
         check_types: ['pii', 'toxicity', 'prompt_injection', 'jailbreak']
       }, {
@@ -85,7 +85,7 @@ export default function Guardrails() {
   const updatePolicy = async () => {
     try {
       setSaving(true);
-      await api.put('/api/v1/admin/guardrails/policy', {
+      await api.put('/admin/guardrails/policy', {
         policy: selectedPolicy
       }, {
         headers: { Authorization: `Bearer ${token}` }
