@@ -21,6 +21,7 @@ This is a full-stack AI Gateway application that provides:
   - `guardrails_service.py`: Input/output validation (PII, toxicity, prompt injection)
   - `tenancy_service.py`: Multi-tenant management and API key handling
   - `usage_service.py`: Usage logging and analytics
+  - `sso_service.py`: Enterprise SSO/OIDC authentication with PKCE support
 
 ### Frontend (React/Vite)
 - **Location**: `ui/`
@@ -34,7 +35,7 @@ This is a full-stack AI Gateway application that provides:
 
 ### Database
 - PostgreSQL with SQLAlchemy models
-- Tables: tenants, api_keys, usage_logs, policies, provider_configs
+- Tables: tenants, api_keys, usage_logs, policies, provider_configs, sso_configs
 
 ### Configuration
 - `backend/configs/models.yaml`: Model definitions and pricing
@@ -72,6 +73,15 @@ docker-compose up --build
 - `POST /api/v1/admin/auth/login` - Login
 - `GET /api/v1/admin/usage/dashboard` - Usage statistics
 - `POST /api/v1/admin/api-keys` - Create API key
+
+### SSO Endpoints
+- `GET /api/v1/admin/auth/sso/providers` - List enabled SSO providers
+- `POST /api/v1/admin/auth/sso/initiate` - Initiate SSO login flow
+- `GET /api/v1/admin/auth/sso/callback` - Handle SSO callback
+- `GET /api/v1/admin/sso/config` - Get tenant SSO configuration
+- `POST /api/v1/admin/sso/config` - Create SSO configuration
+- `PUT /api/v1/admin/sso/config` - Update SSO configuration
+- `POST /api/v1/admin/sso/discover` - Discover OIDC provider configuration
 
 ## Environment Variables
 
