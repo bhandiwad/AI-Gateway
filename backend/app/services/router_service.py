@@ -26,6 +26,9 @@ MODEL_COSTS = {
 
 
 PROVIDER_MODELS = {
+    "mock": [
+        "mock-gpt-4", "mock-claude"
+    ],
     "openai": [
         "gpt-4", "gpt-4-turbo", "gpt-4o", "gpt-4o-mini", 
         "gpt-3.5-turbo", "text-embedding-3-small", "text-embedding-3-large"
@@ -46,12 +49,38 @@ class RouterService:
     def get_provider_for_model(self, model: str) -> str:
         model_lower = model.lower()
         
-        if "gpt" in model_lower or "text-embedding" in model_lower or "dall-e" in model_lower:
+        if "mock" in model_lower:
+            return "mock"
+        elif "gpt" in model_lower or "text-embedding" in model_lower or "dall-e" in model_lower:
             return "openai"
         elif "claude" in model_lower:
             return "anthropic"
         else:
             return "openai"
+    
+    def _generate_mock_response(self, messages: List[Dict[str, Any]], model: str) -> Dict[str, Any]:
+        last_message = messages[-1].get("content", "") if messages else "Hello"
+        mock_content = f"This is a mock response from {model}. You said: '{last_message[:100]}...'" if len(last_message) > 100 else f"This is a mock response from {model}. You said: '{last_message}'"
+        
+        return {
+            "id": f"mock-{uuid.uuid4()}",
+            "object": "chat.completion",
+            "created": int(time.time()),
+            "model": model,
+            "choices": [{
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": mock_content
+                },
+                "finish_reason": "stop"
+            }],
+            "usage": {
+                "prompt_tokens": len(str(messages)) // 4,
+                "completion_tokens": len(mock_content) // 4,
+                "total_tokens": (len(str(messages)) + len(mock_content)) // 4
+            }
+        }
     
     def calculate_cost(
         self, 
@@ -85,6 +114,23 @@ class RouterService:
         provider = self.get_provider_for_model(model)
         
         try:
+            if provider == "mock":
+                await asyncio.sleep(0.1)
+                mock_response = self._generate_mock_response(messages, model)
+                latency_ms = int((time.time() - start_time) * 1000)
+                
+                return {
+                    "response": mock_response,
+                    "request_id": request_id,
+                    "provider": provider,
+                    "model": model,
+                    "prompt_tokens": mock_response["usage"]["prompt_tokens"],
+                    "completion_tokens": mock_response["usage"]["completion_tokens"],
+                    "total_tokens": mock_response["usage"]["total_tokens"],
+                    "cost": 0.0,
+                    "latency_ms": latency_ms
+                }
+            
             litellm_messages = []
             for msg in messages:
                 litellm_msg = {
@@ -150,6 +196,30 @@ class RouterService:
         provider = self.get_provider_for_model(model)
         
         try:
+            if provider == "mock":
+                import json
+                mock_response = self._generate_mock_response(messages, model)
+                content = mock_response["choices"][0]["message"]["content"]
+                
+                for word in content.split():
+                    chunk = {
+                        "id": mock_response["id"],
+                        "object": "chat.completion.chunk",
+                        "created": mock_response["created"],
+                        "model": model,
+                        "choices": [{
+                            "index": 0,
+                            "delta": {"content": word + " "},
+                            "finish_reason": None
+                        }]
+                    }
+                    chunk_json = json.dumps(chunk)
+                    yield f"data: {chunk_json}\n\n"
+                    await asyncio.sleep(0.05)
+                
+                yield "data: [DONE]\n\n"
+                return
+            
             litellm_messages = []
             for msg in messages:
                 litellm_msg = {

@@ -1,4 +1,24 @@
 models:
+  - id: mock-gpt-4
+    name: Mock GPT-4 (Demo)
+    provider: mock
+    context_length: 128000
+    input_cost_per_1k: 0.0
+    output_cost_per_1k: 0.0
+    supports_streaming: true
+    supports_functions: true
+    supports_vision: false
+
+  - id: mock-claude
+    name: Mock Claude (Demo)
+    provider: mock
+    context_length: 200000
+    input_cost_per_1k: 0.0
+    output_cost_per_1k: 0.0
+    supports_streaming: true
+    supports_functions: true
+    supports_vision: false
+
   - id: gpt-4o
     name: GPT-4o
     provider: openai

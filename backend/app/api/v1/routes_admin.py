@@ -167,9 +167,11 @@ async def create_api_key(
     tenant_id = int(current_user["sub"])
     db_key, raw_key = tenancy_service.create_api_key(db, tenant_id, key_data)
     
-    response = APIKeyCreatedResponse.model_validate(db_key)
-    response.api_key = raw_key
-    return response
+    base_response = APIKeyResponse.model_validate(db_key)
+    return APIKeyCreatedResponse(
+        **base_response.model_dump(),
+        api_key=raw_key
+    )
 
 
 @router.delete("/api-keys/{key_id}")
