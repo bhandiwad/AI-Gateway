@@ -84,7 +84,7 @@ export default function Login() {
 
   if (ssoLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
         <div className="text-center">
           <Loader2 className="animate-spin mx-auto mb-4" size={48} />
           <p className="text-gray-600">Authenticating with SSO...</p>
@@ -94,11 +94,11 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">AI Gateway</h1>
-          <p className="text-gray-500 mt-2">Sign in to your account</p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-8">
+      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-6 sm:p-8">
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">AI Gateway</h1>
+          <p className="text-gray-500 mt-2 text-sm sm:text-base">Sign in to your account</p>
         </div>
 
         {error && (
@@ -109,7 +109,7 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Email
             </label>
             <input
@@ -117,13 +117,14 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              autoComplete="email"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
               placeholder="you@example.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Password
             </label>
             <input
@@ -131,7 +132,8 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              autoComplete="current-password"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
               placeholder="Enter your password"
             />
           </div>
@@ -139,9 +141,9 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 flex items-center justify-center gap-2 text-base font-medium min-h-[48px] transition-colors"
           >
-            {loading && <Loader2 className="animate-spin" size={18} />}
+            {loading && <Loader2 className="animate-spin" size={20} />}
             Sign In
           </button>
         </form>
@@ -157,14 +159,14 @@ export default function Login() {
 
         <div className="space-y-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
               SSO Provider Name
             </label>
             <input
               type="text"
               value={ssoProvider}
               onChange={(e) => setSsoProvider(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
               placeholder="e.g., okta, auth0, azure-ad"
             />
           </div>
@@ -173,16 +175,16 @@ export default function Login() {
             type="button"
             onClick={handleSSOLogin}
             disabled={ssoLoading}
-            className="w-full py-2 px-4 bg-gray-800 text-white rounded-lg hover:bg-gray-900 disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-3 px-4 bg-gray-800 text-white rounded-lg hover:bg-gray-900 active:bg-gray-950 disabled:opacity-50 flex items-center justify-center gap-2 text-base font-medium min-h-[48px] transition-colors"
           >
-            <Shield size={18} />
+            <Shield size={20} />
             Sign in with SSO
           </button>
         </div>
 
         <p className="mt-6 text-center text-sm text-gray-500">
           Don't have an account?{' '}
-          <Link to="/register" className="text-blue-600 hover:underline">
+          <Link to="/register" className="text-blue-600 hover:underline font-medium">
             Sign up
           </Link>
         </p>

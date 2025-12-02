@@ -1,3 +1,4 @@
+import { useState, createContext, useContext } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Sidebar from './components/Sidebar';
@@ -9,6 +10,13 @@ import PlaygroundPage from './pages/PlaygroundPage';
 import ApiKeys from './pages/ApiKeys';
 import Tenants from './pages/Tenants';
 import Settings from './pages/Settings';
+import { Menu, X } from 'lucide-react';
+
+const MobileMenuContext = createContext();
+
+export function useMobileMenu() {
+  return useContext(MobileMenuContext);
+}
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -25,13 +33,43 @@ function PrivateRoute({ children }) {
 }
 
 function AppLayout({ children }) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
-    <div className="flex h-screen bg-gray-100">
-      <Sidebar />
-      <main className="flex-1 flex flex-col overflow-hidden">
-        {children}
-      </main>
-    </div>
+    <MobileMenuContext.Provider value={{ mobileMenuOpen, setMobileMenuOpen }}>
+      <div className="flex flex-col md:flex-row h-screen bg-gray-100">
+        <div className="md:hidden bg-gray-900 text-white px-4 py-3 flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-bold">AI Gateway</h1>
+          </div>
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 rounded-lg hover:bg-gray-800 transition-colors"
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+
+        {mobileMenuOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+        )}
+
+        <div className={`
+          fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0
+          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}>
+          <Sidebar onNavClick={() => setMobileMenuOpen(false)} />
+        </div>
+
+        <main className="flex-1 flex flex-col overflow-hidden">
+          {children}
+        </main>
+      </div>
+    </MobileMenuContext.Provider>
   );
 }
 
