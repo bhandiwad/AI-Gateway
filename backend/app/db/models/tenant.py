@@ -28,3 +28,4 @@ class Tenant(Base):
     
     api_keys = relationship("APIKey", back_populates="tenant", cascade="all, delete-orphan")
     usage_logs = relationship("UsageLog", back_populates="tenant", cascade="all, delete-orphan")
+    sso_config = relationship("SSOConfig", back_populates="tenant", uselist=False, cascade="all, delete-orphan")

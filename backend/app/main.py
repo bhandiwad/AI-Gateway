@@ -12,6 +12,11 @@ from backend.app.db.session import engine, Base
 from backend.app.api.v1 import routes_chat, routes_admin
 from backend.app.utils.metrics import get_metrics, ACTIVE_REQUESTS
 
+from backend.app.db.models.tenant import Tenant
+from backend.app.db.models.api_key import APIKey
+from backend.app.db.models.usage_log import UsageLog
+from backend.app.db.models.sso_config import SSOConfig
+
 structlog.configure(
     processors=[
         structlog.stdlib.filter_by_level,
