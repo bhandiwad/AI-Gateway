@@ -169,7 +169,10 @@ Optional:
 
 - Added User management system with roles (admin, manager, user, viewer)
 - Added per-user usage tracking for billing
-- Implemented comprehensive audit logging
+- Implemented comprehensive audit logging with recursive PII sanitization
 - Integrated NVIDIA NeMo Guardrails for BFSI compliance
-- Added billing reports API with invoice generation
-- Added cost forecasting functionality
+- Added billing reports API with invoice generation and cost forecasting
+- Fixed NULL handling in billing queries with COALESCE for JSON serialization
+- Users now default to ACTIVE status for immediate authentication (both SSO and password-based)
+- Enhanced audit exports with full BFSI identifier coverage (Aadhaar, PAN, bank accounts, etc.)
+- IPv6 addresses fully masked as [IPv6_MASKED] to prevent network prefix leakage
