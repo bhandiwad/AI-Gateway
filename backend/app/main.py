@@ -50,7 +50,26 @@ async def lifespan(app: FastAPI):
     await rate_limiter.init()
     logger.info("Rate limiter initialized")
     
+    if settings.ENABLE_TELEMETRY:
+        from backend.app.telemetry import init_telemetry
+        init_telemetry(
+            service_name=settings.PROJECT_NAME,
+            service_version=settings.VERSION,
+            otlp_endpoint=settings.OTLP_ENDPOINT,
+            enable_console_export=settings.TELEMETRY_CONSOLE_EXPORT
+        )
+        logger.info("OpenTelemetry initialized")
+    
+    if settings.ENABLE_SEMANTIC_CACHE:
+        from backend.app.services.semantic_cache_service import semantic_cache
+        await semantic_cache.init_redis()
+        logger.info("Semantic cache initialized")
+    
     yield
+    
+    if settings.ENABLE_TELEMETRY:
+        from backend.app.telemetry import shutdown_telemetry
+        shutdown_telemetry()
     
     await rate_limiter.close()
     logger.info("AI Gateway shutdown complete")
@@ -72,6 +91,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+if settings.ENABLE_TELEMETRY:
+    from backend.app.telemetry import TelemetryMiddleware
+    app.add_middleware(TelemetryMiddleware)
 
 
 @app.middleware("http")
@@ -165,7 +188,13 @@ async def root():
         "name": settings.PROJECT_NAME,
         "version": settings.VERSION,
         "status": "healthy",
-        "docs": "/docs"
+        "docs": "/docs",
+        "features": {
+            "telemetry": settings.ENABLE_TELEMETRY,
+            "semantic_cache": settings.ENABLE_SEMANTIC_CACHE,
+            "content_routing": settings.ENABLE_CONTENT_ROUTING,
+            "stream_inspection": settings.ENABLE_STREAM_INSPECTION
+        }
     }
 
 
@@ -177,3 +206,41 @@ async def health_check():
 @app.get("/metrics")
 async def metrics():
     return get_metrics()
+
+
+@app.get("/api/v1/admin/features/status")
+async def feature_status():
+    features = {
+        "telemetry": {
+            "enabled": settings.ENABLE_TELEMETRY,
+            "otlp_endpoint": settings.OTLP_ENDPOINT or "not configured"
+        },
+        "semantic_cache": {
+            "enabled": settings.ENABLE_SEMANTIC_CACHE,
+            "similarity_threshold": settings.SEMANTIC_CACHE_SIMILARITY_THRESHOLD,
+            "ttl_seconds": settings.SEMANTIC_CACHE_TTL_SECONDS,
+            "max_size": settings.SEMANTIC_CACHE_MAX_SIZE
+        },
+        "content_routing": {
+            "enabled": settings.ENABLE_CONTENT_ROUTING
+        },
+        "stream_inspection": {
+            "enabled": settings.ENABLE_STREAM_INSPECTION,
+            "inspection_interval": settings.STREAM_INSPECTION_INTERVAL,
+            "min_chars": settings.STREAM_INSPECTION_MIN_CHARS
+        }
+    }
+    
+    if settings.ENABLE_SEMANTIC_CACHE:
+        from backend.app.services.semantic_cache_service import semantic_cache
+        features["semantic_cache"]["stats"] = semantic_cache.get_stats()
+    
+    if settings.ENABLE_CONTENT_ROUTING:
+        from backend.app.services.content_routing_service import content_routing_service
+        features["content_routing"]["stats"] = content_routing_service.get_routing_stats()
+    
+    if settings.ENABLE_STREAM_INSPECTION:
+        from backend.app.services.stream_inspection_service import stream_inspection_service
+        features["stream_inspection"]["stats"] = stream_inspection_service.get_stats()
+    
+    return features

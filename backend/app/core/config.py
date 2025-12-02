@@ -30,6 +30,21 @@ class Settings(BaseSettings):
     
     LOG_LEVEL: str = "INFO"
     
+    ENABLE_TELEMETRY: bool = True
+    OTLP_ENDPOINT: Optional[str] = os.getenv("OTLP_ENDPOINT")
+    TELEMETRY_CONSOLE_EXPORT: bool = False
+    
+    ENABLE_SEMANTIC_CACHE: bool = True
+    SEMANTIC_CACHE_SIMILARITY_THRESHOLD: float = 0.92
+    SEMANTIC_CACHE_TTL_SECONDS: int = 3600
+    SEMANTIC_CACHE_MAX_SIZE: int = 10000
+    
+    ENABLE_CONTENT_ROUTING: bool = True
+    
+    ENABLE_STREAM_INSPECTION: bool = True
+    STREAM_INSPECTION_INTERVAL: int = 10
+    STREAM_INSPECTION_MIN_CHARS: int = 100
+    
     class Config:
         env_file = ".env"
         case_sensitive = True
