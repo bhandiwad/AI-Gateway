@@ -9,13 +9,15 @@ import time
 from backend.app.core.config import settings
 from backend.app.core.rate_limit import rate_limiter
 from backend.app.db.session import engine, Base
-from backend.app.api.v1 import routes_chat, routes_admin
+from backend.app.api.v1 import routes_chat, routes_admin, routes_users, routes_audit, routes_billing, routes_guardrails
 from backend.app.utils.metrics import get_metrics, ACTIVE_REQUESTS
 
 from backend.app.db.models.tenant import Tenant
 from backend.app.db.models.api_key import APIKey
 from backend.app.db.models.usage_log import UsageLog
 from backend.app.db.models.sso_config import SSOConfig
+from backend.app.db.models.user import User
+from backend.app.db.models.audit_log import AuditLog
 
 structlog.configure(
     processors=[
@@ -124,6 +126,30 @@ app.include_router(
     routes_admin.router,
     prefix=f"{settings.API_V1_PREFIX}/admin",
     tags=["Admin"]
+)
+
+app.include_router(
+    routes_users.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin",
+    tags=["User Management"]
+)
+
+app.include_router(
+    routes_audit.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin",
+    tags=["Audit Logs"]
+)
+
+app.include_router(
+    routes_billing.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin",
+    tags=["Billing"]
+)
+
+app.include_router(
+    routes_guardrails.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin",
+    tags=["Guardrails"]
 )
 
 

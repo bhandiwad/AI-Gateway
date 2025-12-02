@@ -20,6 +20,8 @@ class Tenant(Base):
     monthly_budget = Column(Float, default=100.0)
     current_spend = Column(Float, default=0.0)
     
+    guardrail_policy = Column(String(50), default="default")
+    
     allowed_models = Column(JSON, default=list)
     metadata_ = Column("metadata", JSON, default=dict)
     
@@ -28,4 +30,5 @@ class Tenant(Base):
     
     api_keys = relationship("APIKey", back_populates="tenant", cascade="all, delete-orphan")
     usage_logs = relationship("UsageLog", back_populates="tenant", cascade="all, delete-orphan")
+    users = relationship("User", back_populates="tenant", cascade="all, delete-orphan")
     sso_config = relationship("SSOConfig", back_populates="tenant", uselist=False, cascade="all, delete-orphan")

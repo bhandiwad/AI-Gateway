@@ -11,6 +11,7 @@ dependencies = [
     "fastapi>=0.123.4",
     "httpx>=0.28.1",
     "litellm>=1.80.7",
+    "nemoguardrails>=0.18.0",
     "passlib>=1.7.4",
     "prometheus-client>=0.23.1",
     "psycopg2-binary>=2.9.11",

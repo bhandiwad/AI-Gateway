@@ -88,3 +88,38 @@ async def verify_api_key(
         )
     
     return api_key
+
+
+async def get_current_tenant(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+):
+    from backend.app.db.session import SessionLocal
+    from backend.app.db.models.tenant import Tenant
+    
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    payload = decode_token(credentials.credentials)
+    tenant_id = payload.get("sub")
+    
+    if not tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+        )
+    
+    db = SessionLocal()
+    try:
+        tenant = db.query(Tenant).filter(Tenant.id == int(tenant_id)).first()
+        if not tenant:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Tenant not found",
+            )
+        return tenant
+    finally:
+        db.close()

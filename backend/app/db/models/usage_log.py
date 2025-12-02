@@ -9,13 +9,14 @@ class UsageLog(Base):
     __tablename__ = "usage_logs"
     
     id = Column(Integer, primary_key=True, index=True)
-    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
     api_key_id = Column(Integer, ForeignKey("api_keys.id"), nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     
     request_id = Column(String(64), unique=True, nullable=False, index=True)
     
     endpoint = Column(String(100), nullable=False)
-    model = Column(String(100), nullable=False)
+    model = Column(String(100), nullable=False, index=True)
     provider = Column(String(50), nullable=False)
     
     prompt_tokens = Column(Integer, default=0)
@@ -37,3 +38,4 @@ class UsageLog(Base):
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     
     tenant = relationship("Tenant", back_populates="usage_logs")
+    user = relationship("User", back_populates="usage_logs", foreign_keys=[user_id])
