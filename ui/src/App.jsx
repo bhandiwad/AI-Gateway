@@ -10,6 +10,11 @@ import PlaygroundPage from './pages/PlaygroundPage';
 import ApiKeys from './pages/ApiKeys';
 import Tenants from './pages/Tenants';
 import Settings from './pages/Settings';
+import AuditLogs from './pages/AuditLogs';
+import Billing from './pages/Billing';
+import Guardrails from './pages/Guardrails';
+import RouterConfig from './pages/RouterConfig';
+import Users from './pages/Users';
 import { Menu, X } from 'lucide-react';
 
 const MobileMenuContext = createContext();
@@ -125,6 +130,46 @@ function AppRoutes() {
         <PrivateRoute>
           <AppLayout>
             <Settings />
+          </AppLayout>
+        </PrivateRoute>
+      } />
+      
+      <Route path="/audit-logs" element={
+        <PrivateRoute>
+          <AppLayout>
+            <AuditLogs />
+          </AppLayout>
+        </PrivateRoute>
+      } />
+      
+      <Route path="/billing" element={
+        <PrivateRoute>
+          <AppLayout>
+            <Billing />
+          </AppLayout>
+        </PrivateRoute>
+      } />
+      
+      <Route path="/guardrails" element={
+        <PrivateRoute>
+          <AppLayout>
+            <Guardrails />
+          </AppLayout>
+        </PrivateRoute>
+      } />
+      
+      <Route path="/router" element={
+        <PrivateRoute>
+          <AppLayout>
+            <RouterConfig />
+          </AppLayout>
+        </PrivateRoute>
+      } />
+      
+      <Route path="/users" element={
+        <PrivateRoute>
+          <AppLayout>
+            <Users />
           </AppLayout>
         </PrivateRoute>
       } />

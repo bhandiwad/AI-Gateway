@@ -7,16 +7,26 @@ import {
   Users, 
   Settings,
   LogOut,
-  X
+  X,
+  FileText,
+  DollarSign,
+  Shield,
+  GitBranch,
+  Building2
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const navItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/playground', label: 'Playground', icon: MessageSquare },
+  { path: '/router', label: 'Router', icon: GitBranch },
   { path: '/models', label: 'Models', icon: Layers },
+  { path: '/playground', label: 'Playground', icon: MessageSquare },
+  { path: '/guardrails', label: 'Guardrails', icon: Shield },
   { path: '/api-keys', label: 'API Keys', icon: Key },
-  { path: '/tenants', label: 'Tenants', icon: Users, adminOnly: true },
+  { path: '/users', label: 'Users', icon: Users },
+  { path: '/billing', label: 'Billing', icon: DollarSign },
+  { path: '/audit-logs', label: 'Audit Logs', icon: FileText },
+  { path: '/tenants', label: 'Tenants', icon: Building2, adminOnly: true },
   { path: '/settings', label: 'Settings', icon: Settings },
 ];
 
