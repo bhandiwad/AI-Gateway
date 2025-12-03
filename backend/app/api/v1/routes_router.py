@@ -39,6 +39,23 @@ class CustomModelCreate(BaseModel):
     is_enabled: bool = True
 
 
+class RateLimitTierUpdate(BaseModel):
+    name: str
+    requests_per_minute: int
+    tokens_per_minute: int
+
+
+class RoutingConfigUpdate(BaseModel):
+    default_provider: Optional[str] = None
+    default_model: Optional[str] = None
+    fallback_enabled: Optional[bool] = None
+    max_retries: Optional[int] = None
+    fallback_order: Optional[List[str]] = None
+    rate_limit_tiers: Optional[List[RateLimitTierUpdate]] = None
+    default_rate_limit_requests: Optional[int] = None
+    default_rate_limit_tokens: Optional[int] = None
+
+
 class CustomModelUpdate(BaseModel):
     name: Optional[str] = None
     provider: Optional[str] = None
@@ -197,6 +214,64 @@ async def get_router_config(
         "caching": routing.get("caching", {}),
         "model_aliases": routing.get("model_aliases", {})
     }
+
+
+def save_routing_config(config: dict):
+    """Save routing configuration to YAML file"""
+    config_path = os.path.join(os.path.dirname(__file__), '../../..', 'configs', 'routing_rules.yaml')
+    with open(config_path, 'w') as f:
+        yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+
+
+@router.put("/router/config")
+async def update_router_config(
+    update_data: RoutingConfigUpdate,
+    current_user: dict = Depends(RequirePermission(Permission.ROUTER_EDIT)),
+    db: Session = Depends(get_db)
+):
+    """Update routing configuration"""
+    config = load_routing_config()
+    routing = config.get("routing", {})
+    
+    if update_data.default_provider is not None:
+        routing["default_provider"] = update_data.default_provider
+    
+    if update_data.default_model is not None:
+        routing["default_model"] = update_data.default_model
+    
+    if "fallback" not in routing:
+        routing["fallback"] = {}
+    
+    if update_data.fallback_enabled is not None:
+        routing["fallback"]["enabled"] = update_data.fallback_enabled
+    
+    if update_data.max_retries is not None:
+        routing["fallback"]["max_retries"] = update_data.max_retries
+    
+    if update_data.fallback_order is not None:
+        routing["fallback"]["fallback_order"] = update_data.fallback_order
+    
+    if "rate_limits" not in routing:
+        routing["rate_limits"] = {"default": {}, "tiers": {}}
+    
+    if update_data.default_rate_limit_requests is not None:
+        routing["rate_limits"]["default"]["requests_per_minute"] = update_data.default_rate_limit_requests
+    
+    if update_data.default_rate_limit_tokens is not None:
+        routing["rate_limits"]["default"]["tokens_per_minute"] = update_data.default_rate_limit_tokens
+    
+    if update_data.rate_limit_tiers is not None:
+        routing["rate_limits"]["tiers"] = {}
+        for tier in update_data.rate_limit_tiers:
+            routing["rate_limits"]["tiers"][tier.name] = {
+                "requests_per_minute": tier.requests_per_minute,
+                "tokens_per_minute": tier.tokens_per_minute
+            }
+    
+    config["routing"] = routing
+    save_routing_config(config)
+    
+    return {"message": "Configuration updated successfully", "config": routing}
 
 
 @router.get("/router/fallback-chain")
