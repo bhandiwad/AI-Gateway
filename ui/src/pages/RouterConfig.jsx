@@ -53,7 +53,7 @@ export default function RouterConfig() {
         api.get('/admin/router/fallback-chain', {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        api.get('/models', {
+        api.get('/admin/models', {
           headers: { Authorization: `Bearer ${token}` }
         }),
         api.get('/admin/router/stats', {
@@ -224,8 +224,8 @@ export default function RouterConfig() {
                   <p className="text-sm text-indigo-100">Active</p>
                 </div>
                 <div className="bg-white/10 rounded-lg p-3">
-                  <p className="text-2xl font-bold">{routingRules.filter(r => r.enabled).length}</p>
-                  <p className="text-sm text-indigo-100">Rules Active</p>
+                  <p className="text-2xl font-bold">{(routingConfig?.strategies || []).filter(r => r.enabled).length}</p>
+                  <p className="text-sm text-indigo-100">Strategies Active</p>
                 </div>
               </div>
             </div>
