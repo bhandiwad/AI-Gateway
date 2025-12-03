@@ -90,16 +90,16 @@ async def test_guardrails(
 
 
 @router.get("/guardrails/bfsi")
-async def get_bfsi_guardrails(
+async def get_compliance_guardrails(
     current_user: dict = Depends(RequirePermission(Permission.GUARDRAILS_VIEW))
 ):
     all_guardrails = nemo_guardrails_service.get_available_guardrails()
-    bfsi_guardrails = [g for g in all_guardrails if g.get("bfsi_relevant", False)]
+    compliance_guardrails = [g for g in all_guardrails if g.get("bfsi_relevant", False)]
     
     return {
-        "guardrails": bfsi_guardrails,
-        "recommended_policy": "bfsi",
-        "description": "BFSI-specific guardrails for banking, financial services, and insurance compliance"
+        "guardrails": compliance_guardrails,
+        "recommended_policy": "compliance",
+        "description": "Enterprise compliance guardrails for regulated industries"
     }
 
 
@@ -111,7 +111,7 @@ async def update_policy(
 ):
     tenant_id = int(current_user["sub"])
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
-    valid_policies = ["default", "strict", "bfsi", "permissive"]
+    valid_policies = ["default", "strict", "compliance", "permissive"]
     if policy not in valid_policies:
         raise HTTPException(
             status_code=400,

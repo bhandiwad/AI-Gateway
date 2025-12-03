@@ -533,7 +533,7 @@ export default function PolicyDesigner({ onProfileSelect }) {
                   type="text"
                   value={newProfile.name}
                   onChange={(e) => setNewProfile({ ...newProfile, name: e.target.value })}
-                  placeholder="e.g., BFSI Compliance"
+                  placeholder="e.g., Enterprise Compliance"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>

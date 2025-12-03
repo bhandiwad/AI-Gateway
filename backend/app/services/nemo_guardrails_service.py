@@ -497,9 +497,9 @@ prompts:
                 "guardrails": ["pii_detection", "prompt_injection", "jailbreak", "toxicity", "confidential_data"]
             },
             {
-                "id": "bfsi",
-                "name": "BFSI Compliance Policy",
-                "description": "Designed for banking and financial services - includes financial advice guards and regulatory compliance",
+                "id": "compliance",
+                "name": "Enterprise Compliance Policy",
+                "description": "Designed for regulated industries - includes financial advice guards and regulatory compliance",
                 "guardrails": ["pii_detection", "prompt_injection", "jailbreak", "financial_advice", "confidential_data", "toxicity", "regulatory_compliance"]
             },
             {

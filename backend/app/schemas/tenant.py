@@ -19,6 +19,12 @@ class TenantUpdate(BaseModel):
     rate_limit: Optional[int] = None
     monthly_budget: Optional[float] = None
     allowed_models: Optional[List[str]] = None
+    allowed_providers: Optional[List[str]] = None
+    guardrail_profile_id: Optional[int] = None
+    default_provider_id: Optional[int] = None
+    cost_ceiling_daily: Optional[float] = None
+    cost_ceiling_monthly: Optional[float] = None
+    logging_policy: Optional[str] = None
 
 
 class TenantResponse(TenantBase):
@@ -28,7 +34,13 @@ class TenantResponse(TenantBase):
     rate_limit: int
     monthly_budget: float
     current_spend: float
-    allowed_models: List[str]
+    allowed_models: Optional[List[str]] = None
+    allowed_providers: Optional[List[str]] = None
+    guardrail_profile_id: Optional[int] = None
+    default_provider_id: Optional[int] = None
+    cost_ceiling_daily: Optional[float] = None
+    cost_ceiling_monthly: Optional[float] = None
+    logging_policy: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     
