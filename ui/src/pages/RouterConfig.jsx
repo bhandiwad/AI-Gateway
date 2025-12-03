@@ -3,6 +3,8 @@ import { useAuth } from '../contexts/AuthContext';
 import api from '../api/client';
 import Header from '../components/Header';
 import ProviderSetupModal from '../components/ProviderSetupModal';
+import RouteSetupModal from '../components/RouteSetupModal';
+import PolicyDesigner from '../components/PolicyDesigner';
 import { 
   GitBranch, 
   Server, 
@@ -53,6 +55,9 @@ export default function RouterConfig() {
   const [providerModalOpen, setProviderModalOpen] = useState(false);
   const [editingProvider, setEditingProvider] = useState(null);
   const [configuredProviders, setConfiguredProviders] = useState([]);
+  const [apiRoutes, setApiRoutes] = useState([]);
+  const [routeModalOpen, setRouteModalOpen] = useState(false);
+  const [editingRoute, setEditingRoute] = useState(null);
 
   const canEdit = hasPermission('router:edit');
 
@@ -69,7 +74,7 @@ export default function RouterConfig() {
       setLoading(true);
       setError(null);
 
-      const [providersRes, configRes, fallbackRes, modelsRes, statsRes, configuredProvidersRes] = await Promise.all([
+      const [providersRes, configRes, fallbackRes, modelsRes, statsRes, configuredProvidersRes, apiRoutesRes] = await Promise.all([
         api.get('/admin/router/providers', {
           headers: { Authorization: `Bearer ${token}` }
         }),
@@ -87,11 +92,15 @@ export default function RouterConfig() {
         }).catch(() => ({ data: { stats: [] } })),
         api.get('/admin/providers', {
           headers: { Authorization: `Bearer ${token}` }
+        }).catch(() => ({ data: [] })),
+        api.get('/admin/providers/routes', {
+          headers: { Authorization: `Bearer ${token}` }
         }).catch(() => ({ data: [] }))
       ]);
 
       setProviders(providersRes.data.providers || []);
       setConfiguredProviders(configuredProvidersRes.data || []);
+      setApiRoutes(apiRoutesRes.data || []);
       const config = configRes.data;
       if (!config.rate_limits_default) {
         const routing = config;
@@ -429,7 +438,7 @@ export default function RouterConfig() {
           )}
 
           <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-            {['providers', 'settings', 'routing', 'models', 'test'].map((tab) => (
+            {['providers', 'api-routes', 'policies', 'settings', 'routing', 'models', 'test'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -439,7 +448,9 @@ export default function RouterConfig() {
                     : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-300'
                 }`}
               >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                {tab === 'api-routes' ? 'API Routes' : 
+                 tab === 'policies' ? 'Guardrail Profiles' :
+                 tab.charAt(0).toUpperCase() + tab.slice(1)}
               </button>
             ))}
           </div>
@@ -900,6 +911,191 @@ client = OpenAI(
             </div>
           )}
 
+          {activeTab === 'api-routes' && (
+            <div className="space-y-4">
+              <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <ArrowRight size={28} className="text-gray-700" />
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900">API Routes</h2>
+                      <p className="text-sm text-gray-600">Define custom API routes with per-route policies, rate limits, and provider assignments</p>
+                    </div>
+                  </div>
+                  {canEdit && (
+                    <button
+                      onClick={() => {
+                        setEditingRoute(null);
+                        setRouteModalOpen(true);
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                    >
+                      <Plus size={16} />
+                      Add Route
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <p className="text-2xl font-bold text-gray-900">{apiRoutes.length}</p>
+                    <p className="text-sm text-gray-500">Total Routes</p>
+                  </div>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <p className="text-2xl font-bold text-green-600">{apiRoutes.filter(r => r.is_active).length}</p>
+                    <p className="text-sm text-gray-500">Active</p>
+                  </div>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <p className="text-2xl font-bold text-gray-900">{apiRoutes.filter(r => r.rate_limit_rpm > 0).length}</p>
+                    <p className="text-sm text-gray-500">Rate Limited</p>
+                  </div>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <p className="text-2xl font-bold text-gray-900">{apiRoutes.filter(r => r.policy_id).length}</p>
+                    <p className="text-sm text-gray-500">With Policies</p>
+                  </div>
+                </div>
+              </div>
+
+              {apiRoutes.length === 0 ? (
+                <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
+                  <ArrowRight size={48} className="mx-auto text-gray-300 mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">No Custom Routes</h3>
+                  <p className="text-gray-500 mb-4">Create custom API routes to control routing behavior per endpoint</p>
+                  {canEdit && (
+                    <button
+                      onClick={() => {
+                        setEditingRoute(null);
+                        setRouteModalOpen(true);
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                      Create First Route
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Route</th>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Methods</th>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Provider</th>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Rate Limit</th>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Status</th>
+                        <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {apiRoutes.map((route, idx) => (
+                        <tr key={idx} className="hover:bg-gray-50">
+                          <td className="px-4 py-3">
+                            <div className="font-medium text-gray-900 font-mono text-sm">{route.path}</div>
+                            {route.description && (
+                              <div className="text-xs text-gray-500">{route.description}</div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex flex-wrap gap-1">
+                              {(route.methods || ['POST']).map((method, midx) => (
+                                <span key={midx} className={`text-xs px-2 py-0.5 rounded font-medium ${
+                                  method === 'GET' ? 'bg-green-100 text-green-700' :
+                                  method === 'POST' ? 'bg-blue-100 text-blue-700' :
+                                  method === 'PUT' ? 'bg-yellow-100 text-yellow-700' :
+                                  method === 'DELETE' ? 'bg-red-100 text-red-700' :
+                                  'bg-gray-100 text-gray-700'
+                                }`}>
+                                  {method}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="text-sm text-gray-700 capitalize">{route.default_provider_id ? 'Custom' : 'Default'}</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            {route.rate_limit_rpm > 0 ? (
+                              <span className="text-sm text-gray-700">{route.rate_limit_rpm} req/min</span>
+                            ) : (
+                              <span className="text-sm text-gray-400">None</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            {route.is_active ? (
+                              <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded">Active</span>
+                            ) : (
+                              <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">Inactive</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            {canEdit && (
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => {
+                                    setEditingRoute(route);
+                                    setRouteModalOpen(true);
+                                  }}
+                                  className="p-1 text-gray-400 hover:text-blue-600"
+                                >
+                                  <Edit2 size={16} />
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    if (confirm('Delete this route?')) {
+                                      try {
+                                        await api.delete(`/admin/providers/routes/${route.id}`, {
+                                          headers: { Authorization: `Bearer ${token}` }
+                                        });
+                                        fetchData();
+                                      } catch (err) {
+                                        setError('Failed to delete route');
+                                      }
+                                    }
+                                  }}
+                                  className="p-1 text-gray-400 hover:text-red-600"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <h3 className="font-semibold text-gray-900 mb-3">Built-in Routes</h3>
+                <p className="text-sm text-gray-600 mb-4">These routes are provided by default and cannot be modified</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    { path: '/chat/completions', method: 'POST', desc: 'Chat completions API (OpenAI-compatible)' },
+                    { path: '/embeddings', method: 'POST', desc: 'Text embeddings API' },
+                    { path: '/models', method: 'GET', desc: 'List available models' },
+                    { path: '/completions', method: 'POST', desc: 'Text completions API' }
+                  ].map((route, idx) => (
+                    <div key={idx} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`text-xs px-2 py-0.5 rounded font-medium ${
+                          route.method === 'GET' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {route.method}
+                        </span>
+                        <span className="font-mono text-sm font-medium text-gray-900">{route.path}</span>
+                      </div>
+                      <p className="text-xs text-gray-500">{route.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'policies' && (
+            <PolicyDesigner />
+          )}
+
           {activeTab === 'routing' && (
             <div className="space-y-4">
               {routingConfig && (
@@ -1185,6 +1381,17 @@ client = OpenAI(
         }}
         onSave={fetchData}
         editProvider={editingProvider}
+        token={token}
+      />
+
+      <RouteSetupModal
+        isOpen={routeModalOpen}
+        onClose={() => {
+          setRouteModalOpen(false);
+          setEditingRoute(null);
+        }}
+        onSave={fetchData}
+        editRoute={editingRoute}
         token={token}
       />
     </div>
