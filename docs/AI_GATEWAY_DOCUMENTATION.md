@@ -298,12 +298,23 @@ Enterprise-grade AI Gateway for BFSI (Banking, Financial Services, Insurance) wi
 
 ### Pre-Created Test Accounts
 
+All test users belong to tenant "Pramod" (tenant_id: 1).
+
 | Role | Email | Password | Description |
 |------|-------|----------|-------------|
 | **Admin** | `admin@test.com` | `Test123!` | Full system access |
 | **Manager** | `manager@test.com` | `Test123!` | Operational access |
 | **User** | `user@test.com` | `Test123!` | Gateway consumer |
 | **Viewer** | `viewer@test.com` | `Test123!` | Read-only access |
+
+### Tenant Accounts (Legacy)
+
+These are organization-level accounts:
+
+| Email | Password | Name |
+|-------|----------|------|
+| `test@gmail.com` | (set during registration) | Pramod |
+| `demo@test.com` | (set during registration) | Demo User |
 
 ### Role Permissions Matrix
 

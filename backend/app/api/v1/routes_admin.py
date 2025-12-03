@@ -15,6 +15,7 @@ from backend.app.services.tenancy_service import tenancy_service
 from backend.app.services.usage_service import usage_service
 from backend.app.services.router_service import router_service
 from backend.app.services.sso_service import sso_service
+from backend.app.services.user_service import user_service
 from backend.app.schemas.tenant import (
     TenantCreate, TenantUpdate, TenantResponse, 
     TenantLogin, TokenResponse
@@ -63,15 +64,31 @@ async def login(
         db, credentials.email, credentials.password
     )
     
+    user = None
+    if not tenant:
+        user = user_service.get_user_by_email_global(db, credentials.email)
+        if user and user.password_hash:
+            if user_service.verify_password(credentials.password, user.password_hash):
+                tenant = tenancy_service.get_tenant_by_id(db, user.tenant_id)
+            else:
+                user = None
+    
     if not tenant:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
         )
     
-    access_token = create_access_token(
-        data={"sub": str(tenant.id), "email": tenant.email, "is_admin": tenant.is_admin}
-    )
+    token_data = {
+        "sub": str(tenant.id), 
+        "email": credentials.email,
+        "is_admin": tenant.is_admin
+    }
+    if user:
+        token_data["user_id"] = user.id
+        token_data["role"] = user.role.value if hasattr(user.role, 'value') else user.role
+    
+    access_token = create_access_token(data=token_data)
     
     return TokenResponse(
         access_token=access_token,
