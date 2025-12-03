@@ -175,75 +175,75 @@ export default function Billing() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <DollarSign className="text-green-600" size={24} />
+              <div className="p-2 bg-gray-100 rounded-lg">
+                <DollarSign className="text-gray-600" size={24} />
               </div>
               <div>
                 <p className="text-sm text-gray-500">Total Cost</p>
-                <p className="text-xl font-bold">{formatCurrency(summary?.total_cost)}</p>
+                <p className="text-xl font-bold text-gray-900">{formatCurrency(summary?.total_cost)}</p>
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <TrendingUp className="text-blue-600" size={24} />
+              <div className="p-2 bg-gray-100 rounded-lg">
+                <TrendingUp className="text-gray-600" size={24} />
               </div>
               <div>
                 <p className="text-sm text-gray-500">Total Tokens</p>
-                <p className="text-xl font-bold">{formatNumber(summary?.total_tokens)}</p>
+                <p className="text-xl font-bold text-gray-900">{formatNumber(summary?.total_tokens)}</p>
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Users className="text-purple-600" size={24} />
+              <div className="p-2 bg-gray-100 rounded-lg">
+                <Users className="text-gray-600" size={24} />
               </div>
               <div>
                 <p className="text-sm text-gray-500">Active Users</p>
-                <p className="text-xl font-bold">{summary?.active_users || 0}</p>
+                <p className="text-xl font-bold text-gray-900">{summary?.active_users || 0}</p>
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <Calendar className="text-orange-600" size={24} />
+              <div className="p-2 bg-gray-100 rounded-lg">
+                <Calendar className="text-gray-600" size={24} />
               </div>
               <div>
                 <p className="text-sm text-gray-500">Total Requests</p>
-                <p className="text-xl font-bold">{formatNumber(summary?.total_requests)}</p>
+                <p className="text-xl font-bold text-gray-900">{formatNumber(summary?.total_requests)}</p>
               </div>
             </div>
           </div>
         </div>
 
         {forecast && (
-          <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow p-6 mb-6 text-white">
-            <h3 className="text-lg font-semibold mb-4">Cost Forecast</h3>
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Cost Forecast</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <p className="text-blue-100 text-sm">Daily Average</p>
-                <p className="text-2xl font-bold">{formatCurrency(forecast.daily_average)}</p>
+                <p className="text-gray-500 text-sm">Daily Average</p>
+                <p className="text-2xl font-bold text-gray-900">{formatCurrency(forecast.daily_average)}</p>
               </div>
               <div>
-                <p className="text-blue-100 text-sm">Projected Monthly</p>
-                <p className="text-2xl font-bold">{formatCurrency(forecast.projected_monthly)}</p>
+                <p className="text-gray-500 text-sm">Projected Monthly</p>
+                <p className="text-2xl font-bold text-gray-900">{formatCurrency(forecast.projected_monthly)}</p>
               </div>
               <div>
-                <p className="text-blue-100 text-sm">Trend</p>
-                <p className="text-2xl font-bold flex items-center gap-2">
+                <p className="text-gray-500 text-sm">Trend</p>
+                <p className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                   {forecast.trend > 0 ? (
                     <>
-                      <TrendingUp size={24} />
+                      <TrendingUp size={24} className="text-emerald-600" />
                       +{forecast.trend?.toFixed(1)}%
                     </>
                   ) : (
                     <>
-                      <TrendingUp size={24} className="rotate-180" />
+                      <TrendingUp size={24} className="rotate-180 text-red-500" />
                       {forecast.trend?.toFixed(1)}%
                     </>
                   )}
@@ -254,8 +254,8 @@ export default function Billing() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="font-semibold mb-4">Cost by Model</h3>
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-4">
+            <h3 className="font-semibold text-gray-900 mb-4">Cost by Model</h3>
             {summary?.model_breakdown && summary.model_breakdown.length > 0 ? (
               <div className="space-y-3">
                 {summary.model_breakdown.map((model, idx) => (
@@ -278,8 +278,8 @@ export default function Billing() {
             )}
           </div>
 
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="font-semibold mb-4">Cost by Provider</h3>
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-4">
+            <h3 className="font-semibold text-gray-900 mb-4">Cost by Provider</h3>
             {summary?.provider_breakdown && summary.provider_breakdown.length > 0 ? (
               <div className="space-y-3">
                 {summary.provider_breakdown.map((provider, idx) => (
@@ -306,9 +306,9 @@ export default function Billing() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="p-4 border-b">
-            <h3 className="font-semibold">User Breakdown</h3>
+        <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+          <div className="p-4 border-b border-gray-200">
+            <h3 className="font-semibold text-gray-900">User Breakdown</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
