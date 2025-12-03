@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, ArrowRight, Plus, Trash2 } from 'lucide-react';
-import api from '../api';
+import api from '../api/client';
 
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
 
@@ -9,7 +9,7 @@ export default function RouteSetupModal({ isOpen, onClose, onSave, editRoute, to
     path: '',
     name: '',
     description: '',
-    methods: ['POST'],
+    allowed_methods: ['POST'],
     is_active: true,
     rate_limit_rpm: 0,
     rate_limit_tpm: 0,
@@ -34,7 +34,7 @@ export default function RouteSetupModal({ isOpen, onClose, onSave, editRoute, to
           path: editRoute.path || '',
           name: editRoute.name || '',
           description: editRoute.description || '',
-          methods: editRoute.methods || ['POST'],
+          allowed_methods: editRoute.allowed_methods || ['POST'],
           is_active: editRoute.is_active !== false,
           rate_limit_rpm: editRoute.rate_limit_rpm || 0,
           rate_limit_tpm: editRoute.rate_limit_tpm || 0,
@@ -52,7 +52,7 @@ export default function RouteSetupModal({ isOpen, onClose, onSave, editRoute, to
           path: '',
           name: '',
           description: '',
-          methods: ['POST'],
+          allowed_methods: ['POST'],
           is_active: true,
           rate_limit_rpm: 0,
           rate_limit_tpm: 0,
@@ -124,12 +124,12 @@ export default function RouteSetupModal({ isOpen, onClose, onSave, editRoute, to
   };
 
   const toggleMethod = (method) => {
-    if (formData.methods.includes(method)) {
-      if (formData.methods.length > 1) {
-        setFormData({ ...formData, methods: formData.methods.filter(m => m !== method) });
+    if (formData.allowed_methods.includes(method)) {
+      if (formData.allowed_methods.length > 1) {
+        setFormData({ ...formData, allowed_methods: formData.allowed_methods.filter(m => m !== method) });
       }
     } else {
-      setFormData({ ...formData, methods: [...formData.methods, method] });
+      setFormData({ ...formData, allowed_methods: [...formData.allowed_methods, method] });
     }
   };
 
@@ -202,7 +202,7 @@ export default function RouteSetupModal({ isOpen, onClose, onSave, editRoute, to
                   key={method}
                   onClick={() => toggleMethod(method)}
                   className={`px-4 py-2 rounded-lg font-medium text-sm ${
-                    formData.methods.includes(method)
+                    formData.allowed_methods.includes(method)
                       ? method === 'GET' ? 'bg-green-600 text-white' :
                         method === 'POST' ? 'bg-blue-600 text-white' :
                         method === 'PUT' ? 'bg-yellow-600 text-white' :

@@ -14,7 +14,7 @@ import {
   Eye,
   Filter
 } from 'lucide-react';
-import api from '../api';
+import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 
 const PROCESSOR_TYPES = [

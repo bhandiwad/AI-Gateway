@@ -65,7 +65,7 @@ class ProviderModel(Base):
     
     created_at = Column(DateTime, default=datetime.utcnow)
     
-    provider = relationship("ProviderConfig", back_populates="provider_models")
+    provider = relationship("EnhancedProviderConfig", back_populates="provider_models")
 
 
 class APIRoute(Base):
@@ -99,7 +99,7 @@ class APIRoute(Base):
     
     tenant = relationship("Tenant", foreign_keys=[tenant_id])
     policy = relationship("RoutingPolicy", foreign_keys=[policy_id])
-    default_provider = relationship("ProviderConfig", foreign_keys=[default_provider_id])
+    default_provider = relationship("EnhancedProviderConfig", foreign_keys=[default_provider_id])
 
 
 class RoutingPolicy(Base):
