@@ -123,6 +123,11 @@ async def get_current_tenant(
     tenant_data["role"] = user_role.value if hasattr(user_role, 'value') else user_role
     tenant_data["permissions"] = [p.value for p in permissions]
     
+    if user:
+        tenant_data["name"] = user.name
+        tenant_data["email"] = user.email
+        tenant_data["user_id"] = user.id
+    
     return tenant_data
 
 

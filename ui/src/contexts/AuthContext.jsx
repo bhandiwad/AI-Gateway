@@ -96,11 +96,14 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const response = await authApi.login({ email, password });
-    const { access_token, tenant } = response.data;
+    const { access_token } = response.data;
     localStorage.setItem('token', access_token);
-    localStorage.setItem('tenant', JSON.stringify(tenant));
-    setUser(tenant);
-    return tenant;
+    
+    const meResponse = await authApi.me();
+    const userData = meResponse.data;
+    localStorage.setItem('tenant', JSON.stringify(userData));
+    setUser(userData);
+    return userData;
   };
 
   const loginWithToken = (token, userData) => {
