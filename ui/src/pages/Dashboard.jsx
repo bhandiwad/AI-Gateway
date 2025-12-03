@@ -43,10 +43,22 @@ export default function Dashboard() {
     }
   };
 
+  const USD_TO_INR = 83.5;
+  
   const formatNumber = (num) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
     return num?.toString() || '0';
+  };
+
+  const formatCurrency = (amount) => {
+    const inrAmount = (amount || 0) * USD_TO_INR;
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(inrAmount);
   };
 
   return (
@@ -92,7 +104,7 @@ export default function Dashboard() {
               <StatCard
                 icon={DollarSign}
                 label="Total Cost"
-                value={`$${stats?.total_cost?.toFixed(2) || '0.00'}`}
+                value={formatCurrency(stats?.total_cost)}
                 color="bg-green-500"
               />
               <StatCard
@@ -123,7 +135,7 @@ export default function Dashboard() {
                       </div>
                       <div className="text-right flex-shrink-0">
                         <p className="text-xs sm:text-sm font-medium text-gray-800">{formatNumber(model.requests)}</p>
-                        <p className="text-xs text-gray-400">${model.cost?.toFixed(4)}</p>
+                        <p className="text-xs text-gray-400">{formatCurrency(model.cost)}</p>
                       </div>
                     </div>
                   ))}
@@ -157,7 +169,7 @@ export default function Dashboard() {
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-sm text-gray-500">Budget Usage</span>
                       <span className="font-medium text-sm">
-                        ${user?.current_spend?.toFixed(2)} / ${user?.monthly_budget?.toFixed(2)}
+                        {formatCurrency(user?.current_spend)} / {formatCurrency(user?.monthly_budget)}
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">

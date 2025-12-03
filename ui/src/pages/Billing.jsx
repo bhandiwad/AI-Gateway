@@ -100,16 +100,20 @@ export default function Billing() {
     }
   };
 
+  const USD_TO_INR = 83.5;
+  
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    const inrAmount = (amount || 0) * USD_TO_INR;
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 4,
-    }).format(amount || 0);
+      currency: 'INR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 4,
+    }).format(inrAmount);
   };
 
   const formatNumber = (num) => {
-    return new Intl.NumberFormat('en-US').format(num || 0);
+    return new Intl.NumberFormat('en-IN').format(num || 0);
   };
 
   if (loading) {

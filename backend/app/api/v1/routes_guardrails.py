@@ -8,8 +8,23 @@ from backend.app.core.security import get_current_tenant, get_current_user
 from backend.app.core.permissions import Permission, RequirePermission
 from backend.app.db.models.tenant import Tenant
 from backend.app.services.nemo_guardrails_service import nemo_guardrails_service
+from backend.app.services.custom_policy_service import custom_policy_service
 
 router = APIRouter()
+
+
+class PolicyCreateRequest(BaseModel):
+    name: str
+    description: Optional[str] = None
+    config: Optional[dict] = None
+    is_active: bool = True
+
+
+class PolicyUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    config: Optional[dict] = None
+    is_active: Optional[bool] = None
 
 
 class GuardrailTestRequest(BaseModel):
@@ -112,3 +127,125 @@ async def update_policy(
         "policy": policy,
         "message": f"Guardrail policy updated to '{policy}'"
     }
+
+
+@router.get("/guardrails/custom")
+async def list_custom_policies(
+    current_user: dict = Depends(RequirePermission(Permission.GUARDRAILS_VIEW)),
+    db: Session = Depends(get_db)
+):
+    """List all custom policies for this tenant"""
+    tenant_id = int(current_user["sub"])
+    policies = custom_policy_service.get_tenant_policies(db, tenant_id)
+    return {"policies": policies}
+
+
+@router.get("/guardrails/custom/{policy_id}")
+async def get_custom_policy(
+    policy_id: int,
+    current_user: dict = Depends(RequirePermission(Permission.GUARDRAILS_VIEW)),
+    db: Session = Depends(get_db)
+):
+    """Get a specific custom policy"""
+    tenant_id = int(current_user["sub"])
+    policy = custom_policy_service.get_policy_by_id(db, tenant_id, policy_id)
+    
+    if not policy:
+        raise HTTPException(
+            status_code=404,
+            detail="Policy not found"
+        )
+    
+    return policy
+
+
+@router.post("/guardrails/custom")
+async def create_custom_policy(
+    request: PolicyCreateRequest,
+    current_user: dict = Depends(RequirePermission(Permission.GUARDRAILS_EDIT)),
+    db: Session = Depends(get_db)
+):
+    """Create a new custom policy"""
+    tenant_id = int(current_user["sub"])
+    user_id = current_user.get("user_id")
+    
+    policy = custom_policy_service.create_policy(
+        db=db,
+        tenant_id=tenant_id,
+        name=request.name,
+        description=request.description,
+        config=request.config,
+        is_active=request.is_active,
+        created_by=user_id
+    )
+    
+    return policy
+
+
+@router.put("/guardrails/custom/{policy_id}")
+async def update_custom_policy(
+    policy_id: int,
+    request: PolicyUpdateRequest,
+    current_user: dict = Depends(RequirePermission(Permission.GUARDRAILS_EDIT)),
+    db: Session = Depends(get_db)
+):
+    """Update a custom policy"""
+    tenant_id = int(current_user["sub"])
+    
+    policy = custom_policy_service.update_policy(
+        db=db,
+        tenant_id=tenant_id,
+        policy_id=policy_id,
+        name=request.name,
+        description=request.description,
+        config=request.config,
+        is_active=request.is_active
+    )
+    
+    if not policy:
+        raise HTTPException(
+            status_code=404,
+            detail="Policy not found"
+        )
+    
+    return policy
+
+
+@router.delete("/guardrails/custom/{policy_id}")
+async def delete_custom_policy(
+    policy_id: int,
+    current_user: dict = Depends(RequirePermission(Permission.GUARDRAILS_EDIT)),
+    db: Session = Depends(get_db)
+):
+    """Delete a custom policy"""
+    tenant_id = int(current_user["sub"])
+    
+    success = custom_policy_service.delete_policy(db, tenant_id, policy_id)
+    
+    if not success:
+        raise HTTPException(
+            status_code=404,
+            detail="Policy not found"
+        )
+    
+    return {"success": True, "message": "Policy deleted successfully"}
+
+
+@router.post("/guardrails/custom/{policy_id}/activate")
+async def activate_custom_policy(
+    policy_id: int,
+    current_user: dict = Depends(RequirePermission(Permission.GUARDRAILS_EDIT)),
+    db: Session = Depends(get_db)
+):
+    """Set a custom policy as the default for this tenant"""
+    tenant_id = int(current_user["sub"])
+    
+    policy = custom_policy_service.set_default_policy(db, tenant_id, policy_id)
+    
+    if not policy:
+        raise HTTPException(
+            status_code=404,
+            detail="Policy not found"
+        )
+    
+    return {"success": True, "policy": policy, "message": "Policy activated as default"}

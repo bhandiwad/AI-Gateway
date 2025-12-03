@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel
@@ -9,9 +9,19 @@ from backend.app.db.session import get_db
 from backend.app.core.security import get_current_user
 from backend.app.core.permissions import Permission, RequirePermission
 from backend.app.services.router_service import router_service
+from backend.app.services.model_settings_service import model_settings_service
 from backend.app.db.models.usage_log import UsageLog
 
 router = APIRouter()
+
+
+class ModelSettingsUpdate(BaseModel):
+    is_enabled: Optional[bool] = None
+    display_order: Optional[int] = None
+
+
+class ModelReorderRequest(BaseModel):
+    model_order: List[str]
 
 class ProviderStatus(BaseModel):
     name: str
@@ -302,3 +312,82 @@ async def get_routing_stats(
         })
     
     return {"stats": provider_stats, "period": "last_7_days"}
+
+
+@router.get("/models/settings")
+async def get_model_settings(
+    current_user: dict = Depends(RequirePermission(Permission.ROUTER_VIEW)),
+    db: Session = Depends(get_db)
+):
+    """Get all models with tenant-specific settings (enabled/disabled, order)"""
+    tenant_id = int(current_user["sub"])
+    models = model_settings_service.get_models_for_tenant(db, tenant_id)
+    return {"models": models}
+
+
+@router.put("/models/{model_id}/settings")
+async def update_model_settings(
+    model_id: str,
+    settings: ModelSettingsUpdate,
+    current_user: dict = Depends(RequirePermission(Permission.ROUTER_EDIT)),
+    db: Session = Depends(get_db)
+):
+    """Update settings for a specific model"""
+    tenant_id = int(current_user["sub"])
+    result = model_settings_service.update_model_settings(
+        db=db,
+        tenant_id=tenant_id,
+        model_id=model_id,
+        is_enabled=settings.is_enabled,
+        display_order=settings.display_order
+    )
+    
+    if not result:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Model '{model_id}' not found"
+        )
+    
+    return result
+
+
+@router.put("/models/{model_id}/toggle")
+async def toggle_model(
+    model_id: str,
+    enabled: bool = Query(...),
+    current_user: dict = Depends(RequirePermission(Permission.ROUTER_EDIT)),
+    db: Session = Depends(get_db)
+):
+    """Enable or disable a model for this tenant"""
+    tenant_id = int(current_user["sub"])
+    result = model_settings_service.toggle_model(
+        db=db,
+        tenant_id=tenant_id,
+        model_id=model_id,
+        is_enabled=enabled
+    )
+    
+    if not result:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Model '{model_id}' not found"
+        )
+    
+    return result
+
+
+@router.post("/models/reorder")
+async def reorder_models(
+    request: ModelReorderRequest,
+    current_user: dict = Depends(RequirePermission(Permission.ROUTER_EDIT)),
+    db: Session = Depends(get_db)
+):
+    """Reorder models for this tenant"""
+    tenant_id = int(current_user["sub"])
+    models = model_settings_service.reorder_models(
+        db=db,
+        tenant_id=tenant_id,
+        model_order=request.model_order
+    )
+    
+    return {"models": models, "message": "Models reordered successfully"}
