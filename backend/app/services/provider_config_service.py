@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
 from backend.app.db.models.provider_config import (
-    ProviderConfig, ProviderModel, APIRoute, RoutingPolicy,
+    EnhancedProviderConfig as ProviderConfig, ProviderModel, APIRoute, RoutingPolicy,
     GuardrailProfile, ProcessorDefinition
 )
 

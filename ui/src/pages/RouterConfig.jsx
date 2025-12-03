@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../api/client';
 import Header from '../components/Header';
+import ProviderSetupModal from '../components/ProviderSetupModal';
 import { 
   GitBranch, 
   Server, 
@@ -22,7 +23,10 @@ import {
   Trash2,
   Copy,
   Check,
-  Edit2
+  Edit2,
+  Globe,
+  Clock,
+  Settings
 } from 'lucide-react';
 
 export default function RouterConfig() {
@@ -46,6 +50,9 @@ export default function RouterConfig() {
   const [hasChanges, setHasChanges] = useState(false);
   const [editingTierName, setEditingTierName] = useState(null);
   const [newTierName, setNewTierName] = useState('');
+  const [providerModalOpen, setProviderModalOpen] = useState(false);
+  const [editingProvider, setEditingProvider] = useState(null);
+  const [configuredProviders, setConfiguredProviders] = useState([]);
 
   const canEdit = hasPermission('router:edit');
 
@@ -62,7 +69,7 @@ export default function RouterConfig() {
       setLoading(true);
       setError(null);
 
-      const [providersRes, configRes, fallbackRes, modelsRes, statsRes] = await Promise.all([
+      const [providersRes, configRes, fallbackRes, modelsRes, statsRes, configuredProvidersRes] = await Promise.all([
         api.get('/admin/router/providers', {
           headers: { Authorization: `Bearer ${token}` }
         }),
@@ -77,10 +84,14 @@ export default function RouterConfig() {
         }),
         api.get('/admin/router/stats', {
           headers: { Authorization: `Bearer ${token}` }
-        }).catch(() => ({ data: { stats: [] } }))
+        }).catch(() => ({ data: { stats: [] } })),
+        api.get('/admin/providers', {
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(() => ({ data: [] }))
       ]);
 
       setProviders(providersRes.data.providers || []);
+      setConfiguredProviders(configuredProvidersRes.data || []);
       const config = configRes.data;
       if (!config.rate_limits_default) {
         const routing = config;
@@ -716,72 +727,175 @@ client = OpenAI(
           {activeTab === 'providers' && (
             <div className="space-y-4">
               <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6 shadow-sm">
-                <div className="flex items-center gap-3 mb-2">
-                  <GitBranch size={28} className="text-gray-700" />
-                  <h2 className="text-xl font-bold text-gray-900">Multi-Provider Gateway</h2>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <GitBranch size={28} className="text-gray-700" />
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900">Backend Providers</h2>
+                      <p className="text-sm text-gray-600">Configure AI service backends with endpoints, credentials, and models</p>
+                    </div>
+                  </div>
+                  {canEdit && (
+                    <button
+                      onClick={() => {
+                        setEditingProvider(null);
+                        setProviderModalOpen(true);
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                    >
+                      <Plus size={16} />
+                      Add Provider
+                    </button>
+                  )}
                 </div>
-                <p className="text-gray-600">
-                  Route requests across multiple AI providers with automatic fallback and load balancing.
-                </p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                    <p className="text-2xl font-bold text-gray-900">{providers.length}</p>
-                    <p className="text-sm text-gray-500">Providers</p>
+                    <p className="text-2xl font-bold text-gray-900">{providers.length + configuredProviders.length}</p>
+                    <p className="text-sm text-gray-500">Total Providers</p>
                   </div>
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
                     <p className="text-2xl font-bold text-gray-900">{models.length}</p>
                     <p className="text-sm text-gray-500">Models</p>
                   </div>
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                    <p className="text-2xl font-bold text-green-600">{providers.filter(p => p.status === 'active').length}</p>
+                    <p className="text-2xl font-bold text-green-600">{providers.filter(p => p.status === 'active').length + configuredProviders.filter(p => p.is_active).length}</p>
                     <p className="text-sm text-gray-500">Active</p>
                   </div>
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                    <p className="text-2xl font-bold text-gray-900">{(routingConfig?.strategies || []).filter(r => r.enabled).length}</p>
-                    <p className="text-sm text-gray-500">Strategies Active</p>
+                    <p className="text-2xl font-bold text-gray-900">{configuredProviders.length}</p>
+                    <p className="text-sm text-gray-500">Custom Configured</p>
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {providers.map((provider, idx) => (
-                  <div key={idx} className="bg-white rounded-lg shadow p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">{getProviderIcon(provider.name)}</span>
-                        <h3 className="font-semibold capitalize">{provider.name}</h3>
-                      </div>
-                      {getStatusBadge(provider.status)}
-                    </div>
-                    
-                    <div className="space-y-2 mb-3">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-500">Models</span>
-                        <span className="font-medium">{provider.models.length}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-500">Priority</span>
-                        <span className="font-medium">{provider.priority}</span>
-                      </div>
-                    </div>
+              {configuredProviders.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <Settings size={18} />
+                    Custom Configured Providers
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {configuredProviders.map((provider, idx) => (
+                      <div key={idx} className="bg-white rounded-lg shadow border border-gray-200 p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">{getProviderIcon(provider.service_type)}</span>
+                            <div>
+                              <h3 className="font-semibold">{provider.display_name || provider.name}</h3>
+                              <p className="text-xs text-gray-500 capitalize">{provider.service_type}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {provider.is_active ? (
+                              <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded">Active</span>
+                            ) : (
+                              <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">Inactive</span>
+                            )}
+                            {canEdit && (
+                              <button
+                                onClick={() => {
+                                  setEditingProvider(provider);
+                                  setProviderModalOpen(true);
+                                }}
+                                className="p-1 text-gray-400 hover:text-blue-600"
+                              >
+                                <Edit2 size={16} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2 mb-3 text-sm">
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-500 flex items-center gap-1">
+                              <Server size={14} />
+                              Endpoint
+                            </span>
+                            <span className="font-mono text-xs truncate max-w-32" title={provider.endpoint_url}>
+                              {provider.endpoint_url ? new URL(provider.endpoint_url).hostname : 'Default'}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-500 flex items-center gap-1">
+                              <Clock size={14} />
+                              Timeout
+                            </span>
+                            <span>{provider.timeout_seconds}s</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-500 flex items-center gap-1">
+                              <Globe size={14} />
+                              Traffic
+                            </span>
+                            <span className={provider.traffic_leaves_enterprise ? 'text-yellow-600' : 'text-green-600'}>
+                              {provider.traffic_leaves_enterprise ? 'External' : 'Internal'}
+                            </span>
+                          </div>
+                        </div>
 
-                    <div className="border-t pt-3">
-                      <p className="text-xs text-gray-500 mb-2">Available Models</p>
-                      <div className="flex flex-wrap gap-1">
-                        {provider.models.slice(0, 3).map((model, midx) => (
-                          <span key={midx} className="text-xs px-2 py-1 bg-gray-100 rounded">
-                            {typeof model === 'string' ? model : model.id?.split('/').pop() || model}
-                          </span>
-                        ))}
-                        {provider.models.length > 3 && (
-                          <span className="text-xs px-2 py-1 bg-gray-100 rounded">
-                            +{provider.models.length - 3} more
-                          </span>
-                        )}
+                        <div className="border-t pt-3">
+                          <p className="text-xs text-gray-500 mb-2">Models ({provider.models?.length || 0})</p>
+                          <div className="flex flex-wrap gap-1">
+                            {(provider.models || []).slice(0, 3).map((model, midx) => (
+                              <span key={midx} className="text-xs px-2 py-1 bg-gray-100 rounded">
+                                {model}
+                              </span>
+                            ))}
+                            {(provider.models || []).length > 3 && (
+                              <span className="text-xs px-2 py-1 bg-gray-100 rounded">
+                                +{provider.models.length - 3} more
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Built-in Providers</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {providers.map((provider, idx) => (
+                    <div key={idx} className="bg-white rounded-lg shadow p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">{getProviderIcon(provider.name)}</span>
+                          <h3 className="font-semibold capitalize">{provider.name}</h3>
+                        </div>
+                        {getStatusBadge(provider.status)}
+                      </div>
+                      
+                      <div className="space-y-2 mb-3">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-500">Models</span>
+                          <span className="font-medium">{provider.models.length}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-500">Priority</span>
+                          <span className="font-medium">{provider.priority}</span>
+                        </div>
+                      </div>
+
+                      <div className="border-t pt-3">
+                        <p className="text-xs text-gray-500 mb-2">Available Models</p>
+                        <div className="flex flex-wrap gap-1">
+                          {provider.models.slice(0, 3).map((model, midx) => (
+                            <span key={midx} className="text-xs px-2 py-1 bg-gray-100 rounded">
+                              {typeof model === 'string' ? model : model.id?.split('/').pop() || model}
+                            </span>
+                          ))}
+                          {provider.models.length > 3 && (
+                            <span className="text-xs px-2 py-1 bg-gray-100 rounded">
+                              +{provider.models.length - 3} more
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -1062,6 +1176,17 @@ client = OpenAI(
           )}
         </div>
       </div>
+
+      <ProviderSetupModal
+        isOpen={providerModalOpen}
+        onClose={() => {
+          setProviderModalOpen(false);
+          setEditingProvider(null);
+        }}
+        onSave={fetchData}
+        editProvider={editingProvider}
+        token={token}
+      />
     </div>
   );
 }

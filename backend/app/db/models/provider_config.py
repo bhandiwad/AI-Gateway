@@ -5,7 +5,7 @@ from datetime import datetime
 from backend.app.db.session import Base
 
 
-class ProviderConfig(Base):
+class EnhancedProviderConfig(Base):
     """Enhanced provider configuration matching F5 AI Gateway capabilities."""
     __tablename__ = "provider_configs_v2"
     

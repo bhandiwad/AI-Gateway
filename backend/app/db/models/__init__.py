@@ -7,7 +7,7 @@ from backend.app.db.models.tenant_model_settings import TenantModelSettings
 from backend.app.db.models.custom_guardrail_policy import CustomGuardrailPolicy
 from backend.app.db.models.custom_model import CustomModel
 from backend.app.db.models.provider_config import (
-    ProviderConfig,
+    EnhancedProviderConfig,
     ProviderModel,
     APIRoute,
     RoutingPolicy,
@@ -18,6 +18,6 @@ from backend.app.db.models.provider_config import (
 __all__ = [
     "Tenant", "APIKey", "UsageLog", "Policy", "LegacyProviderConfig",
     "TenantModelSettings", "CustomGuardrailPolicy", "CustomModel",
-    "ProviderConfig", "ProviderModel", "APIRoute", "RoutingPolicy",
+    "EnhancedProviderConfig", "ProviderModel", "APIRoute", "RoutingPolicy",
     "GuardrailProfile", "ProcessorDefinition"
 ]
