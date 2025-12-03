@@ -165,7 +165,7 @@ export default function Guardrails() {
           <div className="flex gap-2">
             <button
               onClick={() => navigate('/router-config?tab=profiles')}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 min-h-[44px]"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 min-h-[44px]"
             >
               <Plus size={18} />
               <span>Create Profile</span>
@@ -194,7 +194,7 @@ export default function Guardrails() {
               onClick={() => setActiveTab(tab)}
               className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap min-h-[44px] ${
                 activeTab === tab
-                  ? 'bg-gray-900 text-white'
+                  ? 'bg-blue-600 text-white'
                   : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-300'
               }`}
             >
@@ -318,7 +318,7 @@ export default function Guardrails() {
                 </p>
                 <button
                   onClick={() => navigate('/router-config?tab=profiles')}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   <Plus size={18} />
                   Create Profile
@@ -547,7 +547,7 @@ export default function Guardrails() {
               <button
                 onClick={testGuardrails}
                 disabled={testing || !testInput.trim()}
-                className="flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 min-h-[44px]"
+                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 min-h-[44px]"
               >
                 <Play size={18} />
                 <span>{testing ? 'Testing...' : 'Run Test'}</span>
@@ -651,7 +651,7 @@ export default function Guardrails() {
               <button
                 onClick={updatePolicy}
                 disabled={saving}
-                className="flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
                 <Save size={18} />
                 <span>{saving ? 'Saving...' : 'Save Changes'}</span>
