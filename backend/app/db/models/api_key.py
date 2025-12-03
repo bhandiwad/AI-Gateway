@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, JSON, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -26,8 +26,8 @@ class APIKey(Base):
     allowed_models_override = Column(JSON, nullable=True)
     allowed_providers_override = Column(JSON, nullable=True)
     
-    cost_limit_daily = Column(Integer, nullable=True)
-    cost_limit_monthly = Column(Integer, nullable=True)
+    cost_limit_daily = Column(Float, nullable=True)
+    cost_limit_monthly = Column(Float, nullable=True)
     
     metadata_ = Column("metadata", JSON, default=dict)
     

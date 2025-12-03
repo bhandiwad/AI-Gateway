@@ -231,7 +231,7 @@ export default function Guardrails() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Guardrails</h1>
-            <p className="text-gray-600 mt-1">BFSI-compliant safety and compliance controls</p>
+            <p className="text-gray-600 mt-1">Enterprise safety and compliance controls</p>
           </div>
           <div className="flex gap-2">
             {canEdit && (
@@ -389,30 +389,30 @@ export default function Guardrails() {
 
         {activeTab === 'bfsi' && bfsiGuardrails && (
           <div className="space-y-6">
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg p-6 text-white">
+            <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-4">
-                <Shield size={32} />
+                <Shield size={32} className="text-gray-700" />
                 <div>
-                  <h2 className="text-xl font-bold">BFSI Compliance Suite</h2>
-                  <p className="text-blue-100">Banking, Financial Services & Insurance guardrails</p>
+                  <h2 className="text-xl font-bold text-gray-900">Compliance Suite</h2>
+                  <p className="text-gray-600">Industry compliance guardrails</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                <div className="bg-white/10 rounded-lg p-3">
-                  <p className="text-2xl font-bold">{bfsiGuardrails.total_rules || 0}</p>
-                  <p className="text-sm text-blue-100">Total Rules</p>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <p className="text-2xl font-bold text-gray-900">{bfsiGuardrails.total_rules || 0}</p>
+                  <p className="text-sm text-gray-500">Total Rules</p>
                 </div>
-                <div className="bg-white/10 rounded-lg p-3">
-                  <p className="text-2xl font-bold">{bfsiGuardrails.enabled_count || 0}</p>
-                  <p className="text-sm text-blue-100">Active</p>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <p className="text-2xl font-bold text-gray-900">{bfsiGuardrails.enabled_count || 0}</p>
+                  <p className="text-sm text-gray-500">Active</p>
                 </div>
-                <div className="bg-white/10 rounded-lg p-3">
-                  <p className="text-2xl font-bold">{bfsiGuardrails.pii_patterns || 0}</p>
-                  <p className="text-sm text-blue-100">PII Patterns</p>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <p className="text-2xl font-bold text-gray-900">{bfsiGuardrails.pii_patterns || 0}</p>
+                  <p className="text-sm text-gray-500">PII Patterns</p>
                 </div>
-                <div className="bg-white/10 rounded-lg p-3">
-                  <p className="text-2xl font-bold">{bfsiGuardrails.compliance_frameworks?.length || 0}</p>
-                  <p className="text-sm text-blue-100">Frameworks</p>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <p className="text-2xl font-bold text-gray-900">{bfsiGuardrails.compliance_frameworks?.length || 0}</p>
+                  <p className="text-sm text-gray-500">Frameworks</p>
                 </div>
               </div>
             </div>

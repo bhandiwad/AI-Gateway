@@ -54,7 +54,7 @@ export default function PolicyDesigner({ onProfileSelect }) {
   const fetchProfiles = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/admin/providers/profiles', {
+      const response = await api.get('/admin/providers/profiles/list', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setProfiles(response.data || []);
@@ -218,6 +218,8 @@ export default function PolicyDesigner({ onProfileSelect }) {
     }
   };
 
+  const [openDropdown, setOpenDropdown] = useState(null);
+
   const renderProcessorList = (phase, processors) => {
     const availableProcessors = PROCESSOR_TYPES.filter(p => 
       p.phase === phase || p.phase === 'both'
@@ -240,23 +242,31 @@ export default function PolicyDesigner({ onProfileSelect }) {
             )}
           </h4>
           {editingProfile && canEdit && (
-            <div className="relative group">
-              <button className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded flex items-center gap-1">
+            <div className="relative">
+              <button 
+                onClick={() => setOpenDropdown(openDropdown === phase ? null : phase)}
+                className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded flex items-center gap-1"
+              >
                 <Plus size={14} />
                 Add
               </button>
-              <div className="absolute right-0 top-full mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10 hidden group-hover:block">
-                {availableProcessors.map(processor => (
-                  <button
-                    key={processor.id}
-                    onClick={() => addProcessor(phase, processor.id)}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
-                  >
-                    <div className="font-medium text-gray-900">{processor.name}</div>
-                    <div className="text-xs text-gray-500">{processor.desc}</div>
-                  </button>
-                ))}
-              </div>
+              {openDropdown === phase && (
+                <div className="absolute right-0 top-full mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                  {availableProcessors.map(processor => (
+                    <button
+                      key={processor.id}
+                      onClick={() => {
+                        addProcessor(phase, processor.id);
+                        setOpenDropdown(null);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
+                    >
+                      <div className="font-medium text-gray-900">{processor.name}</div>
+                      <div className="text-xs text-gray-500">{processor.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

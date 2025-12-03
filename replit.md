@@ -1,10 +1,10 @@
 # AI Gateway
 
-Enterprise-grade AI Gateway for BFSI (Banking, Financial Services, Insurance) with multi-provider routing, advanced guardrails, and comprehensive billing analytics.
+Enterprise-grade AI Gateway with multi-provider routing, advanced guardrails, and comprehensive billing analytics.
 
 ## Overview
 
-The AI Gateway is a full-stack application designed to provide a unified, secure, and compliant interface for accessing various AI models. Its primary purpose is to serve the BFSI sector by offering robust features like multi-provider AI model routing, advanced guardrails for regulatory compliance (e.g., PII protection, financial advice flagging), multi-tenant architecture with per-user management and billing, and comprehensive audit logging. The project aims to reduce LLM costs through features like semantic caching and intelligent content-based routing while providing an intuitive admin dashboard for management and analytics.
+The AI Gateway is a full-stack application designed to provide a unified, secure, and compliant interface for accessing various AI models. It offers robust features like multi-provider AI model routing (users add their own providers with API keys), advanced guardrails for regulatory compliance (e.g., PII protection), multi-tenant architecture with per-user management and billing, and comprehensive audit logging. The project aims to reduce LLM costs through features like semantic caching and intelligent content-based routing while providing an intuitive admin dashboard for management and analytics.
 
 ## User Preferences
 
@@ -25,7 +25,7 @@ The AI Gateway is a full-stack application designed to provide a unified, secure
 - **Port**: 8000
 - **Key Services**:
   - `router_service.py`: LiteLLM-based multi-provider routing
-  - `nemo_guardrails_service.py`: Advanced BFSI guardrails
+  - `nemo_guardrails_service.py`: Advanced enterprise guardrails
   - `guardrails_service.py`: Input/output validation
   - `tenancy_service.py`: Multi-tenant management and API key handling
   - `usage_service.py`: Usage logging and analytics

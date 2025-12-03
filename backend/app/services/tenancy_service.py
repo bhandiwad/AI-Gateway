@@ -122,8 +122,8 @@ class TenancyService:
         self._validate_resource_ownership(
             db, 
             tenant_id,
-            guardrail_profile_id=getattr(api_key_data, 'guardrail_profile_id', None),
-            default_provider_id=getattr(api_key_data, 'default_provider_id', None)
+            guardrail_profile_id=api_key_data.guardrail_profile_id,
+            default_provider_id=api_key_data.default_provider_id
         )
         
         raw_key = generate_api_key()
@@ -134,14 +134,14 @@ class TenancyService:
             name=api_key_data.name,
             key_hash=key_hash,
             key_prefix=raw_key[:12],
-            environment=getattr(api_key_data, 'environment', 'production'),
-            guardrail_profile_id=getattr(api_key_data, 'guardrail_profile_id', None),
-            default_provider_id=getattr(api_key_data, 'default_provider_id', None),
+            environment=api_key_data.environment or 'production',
+            guardrail_profile_id=api_key_data.guardrail_profile_id,
+            default_provider_id=api_key_data.default_provider_id,
             rate_limit_override=api_key_data.rate_limit_override,
             allowed_models_override=api_key_data.allowed_models_override,
-            allowed_providers_override=getattr(api_key_data, 'allowed_providers_override', None),
-            cost_limit_daily=getattr(api_key_data, 'cost_limit_daily', None),
-            cost_limit_monthly=getattr(api_key_data, 'cost_limit_monthly', None),
+            allowed_providers_override=api_key_data.allowed_providers_override,
+            cost_limit_daily=api_key_data.cost_limit_daily,
+            cost_limit_monthly=api_key_data.cost_limit_monthly,
             expires_at=api_key_data.expires_at
         )
         db.add(db_key)

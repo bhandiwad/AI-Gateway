@@ -1,19 +1,34 @@
 import { useState, useEffect } from 'react';
 import { apiKeysApi } from '../api/client';
 import Header from '../components/Header';
-import { Key, Plus, Trash2, Copy, Check, AlertTriangle } from 'lucide-react';
+import api from '../api/client';
+import { Key, Plus, Trash2, Copy, Check, AlertTriangle, Settings, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function ApiKeys() {
   const [apiKeys, setApiKeys] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [newKeyName, setNewKeyName] = useState('');
   const [createdKey, setCreatedKey] = useState(null);
   const [copied, setCopied] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [profiles, setProfiles] = useState([]);
+  const [providers, setProviders] = useState([]);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    name: '',
+    environment: 'production',
+    guardrail_profile_id: null,
+    default_provider_id: null,
+    rate_limit_override: null,
+    cost_limit_daily: null,
+    cost_limit_monthly: null
+  });
 
   useEffect(() => {
     loadApiKeys();
+    loadProfiles();
+    loadProviders();
   }, []);
 
   const loadApiKeys = async () => {
@@ -27,16 +42,57 @@ export default function ApiKeys() {
     }
   };
 
+  const loadProfiles = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await api.get('/admin/providers/profiles/list', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setProfiles(response.data || []);
+    } catch (error) {
+      console.error('Failed to load profiles:', error);
+    }
+  };
+
+  const loadProviders = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await api.get('/admin/providers', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setProviders(response.data || []);
+    } catch (error) {
+      console.error('Failed to load providers:', error);
+    }
+  };
+
   const handleCreate = async (e) => {
     e.preventDefault();
-    if (!newKeyName.trim()) return;
+    if (!formData.name.trim()) return;
 
     setCreating(true);
     try {
-      const response = await apiKeysApi.create({ name: newKeyName });
+      const payload = {
+        name: formData.name,
+        environment: formData.environment,
+        guardrail_profile_id: formData.guardrail_profile_id || undefined,
+        default_provider_id: formData.default_provider_id || undefined,
+        rate_limit_override: formData.rate_limit_override || undefined,
+        cost_limit_daily: formData.cost_limit_daily || undefined,
+        cost_limit_monthly: formData.cost_limit_monthly || undefined
+      };
+      const response = await apiKeysApi.create(payload);
       setCreatedKey(response.data.api_key);
       setApiKeys([response.data, ...apiKeys]);
-      setNewKeyName('');
+      setFormData({
+        name: '',
+        environment: 'production',
+        guardrail_profile_id: null,
+        default_provider_id: null,
+        rate_limit_override: null,
+        cost_limit_daily: null,
+        cost_limit_monthly: null
+      });
     } catch (error) {
       console.error('Failed to create API key:', error);
     } finally {
@@ -61,19 +117,28 @@ export default function ApiKeys() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const getEnvironmentBadge = (env) => {
+    const styles = {
+      production: 'bg-red-100 text-red-800',
+      staging: 'bg-yellow-100 text-yellow-800',
+      development: 'bg-blue-100 text-blue-800'
+    };
+    return styles[env] || styles.production;
+  };
+
   return (
     <div className="flex-1 flex flex-col min-h-0">
       <Header title="API Keys" />
       
       <div className="flex-1 overflow-auto p-6 bg-gray-50">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <p className="text-gray-500">
               Manage your API keys for accessing the AI Gateway
             </p>
             <button
               onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
             >
               <Plus size={18} />
               Create New Key
@@ -113,28 +178,135 @@ export default function ApiKeys() {
                   </button>
                 </div>
               ) : (
-                <form onSubmit={handleCreate} className="flex gap-4">
-                  <input
-                    type="text"
-                    value={newKeyName}
-                    onChange={(e) => setNewKeyName(e.target.value)}
-                    placeholder="Key name (e.g., Production API)"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button
-                    type="submit"
-                    disabled={creating || !newKeyName.trim()}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {creating ? 'Creating...' : 'Create'}
-                  </button>
+                <form onSubmit={handleCreate} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Key Name *</label>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="e.g., Production API"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Environment</label>
+                      <select
+                        value={formData.environment}
+                        onChange={(e) => setFormData({ ...formData, environment: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+                      >
+                        <option value="production">Production</option>
+                        <option value="staging">Staging</option>
+                        <option value="development">Development</option>
+                      </select>
+                    </div>
+                  </div>
+
                   <button
                     type="button"
-                    onClick={() => setShowCreate(false)}
-                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                    onClick={() => setShowAdvanced(!showAdvanced)}
+                    className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800"
                   >
-                    Cancel
+                    <Settings size={16} />
+                    Advanced Options
+                    {showAdvanced ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </button>
+
+                  {showAdvanced && (
+                    <div className="space-y-4 pt-4 border-t border-gray-200">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Guardrail Profile</label>
+                          <select
+                            value={formData.guardrail_profile_id || ''}
+                            onChange={(e) => setFormData({ ...formData, guardrail_profile_id: e.target.value ? parseInt(e.target.value) : null })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+                          >
+                            <option value="">Use Default</option>
+                            {profiles.map(p => (
+                              <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                          </select>
+                          <p className="mt-1 text-xs text-gray-500">Override default guardrail profile for this key</p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Default Provider</label>
+                          <select
+                            value={formData.default_provider_id || ''}
+                            onChange={(e) => setFormData({ ...formData, default_provider_id: e.target.value ? parseInt(e.target.value) : null })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+                          >
+                            <option value="">Use Default</option>
+                            {providers.map(p => (
+                              <option key={p.id} value={p.id}>{p.name || p.display_name}</option>
+                            ))}
+                          </select>
+                          <p className="mt-1 text-xs text-gray-500">Override default provider for this key</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Rate Limit Override</label>
+                          <input
+                            type="number"
+                            value={formData.rate_limit_override || ''}
+                            onChange={(e) => setFormData({ ...formData, rate_limit_override: e.target.value ? parseInt(e.target.value) : null })}
+                            placeholder="requests/min"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Daily Cost Limit</label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-2 text-gray-500">₹</span>
+                            <input
+                              type="number"
+                              value={formData.cost_limit_daily || ''}
+                              onChange={(e) => setFormData({ ...formData, cost_limit_daily: e.target.value ? parseFloat(e.target.value) : null })}
+                              placeholder="0.00"
+                              className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Cost Limit</label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-2 text-gray-500">₹</span>
+                            <input
+                              type="number"
+                              value={formData.cost_limit_monthly || ''}
+                              onChange={(e) => setFormData({ ...formData, cost_limit_monthly: e.target.value ? parseFloat(e.target.value) : null })}
+                              placeholder="0.00"
+                              className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCreate(false);
+                        setShowAdvanced(false);
+                      }}
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={creating || !formData.name.trim()}
+                      className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50"
+                    >
+                      {creating ? 'Creating...' : 'Create API Key'}
+                    </button>
+                  </div>
                 </form>
               )}
             </div>
@@ -142,7 +314,7 @@ export default function ApiKeys() {
 
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
             </div>
           ) : (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -154,6 +326,9 @@ export default function ApiKeys() {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Key Prefix
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Environment
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
@@ -180,6 +355,11 @@ export default function ApiKeys() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <code className="text-sm text-gray-500">{key.key_prefix}...</code>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getEnvironmentBadge(key.environment)}`}>
+                          {key.environment || 'production'}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {key.is_active ? (
@@ -221,7 +401,7 @@ export default function ApiKeys() {
                   <p className="text-gray-500">No API keys yet</p>
                   <button
                     onClick={() => setShowCreate(true)}
-                    className="mt-4 text-blue-600 hover:underline"
+                    className="mt-4 text-gray-700 hover:underline"
                   >
                     Create your first API key
                   </button>

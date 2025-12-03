@@ -93,7 +93,7 @@ export default function RouterConfig() {
         api.get('/admin/providers', {
           headers: { Authorization: `Bearer ${token}` }
         }).catch(() => ({ data: [] })),
-        api.get('/admin/providers/routes', {
+        api.get('/admin/providers/routes/list', {
           headers: { Authorization: `Bearer ${token}` }
         }).catch(() => ({ data: [] }))
       ]);

@@ -160,9 +160,29 @@ export default function Settings() {
               </div>
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">Account Limits</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-gray-50 rounded-lg"><p className="text-sm text-gray-500">Rate Limit</p><p className="text-2xl font-bold text-gray-800">{user?.rate_limit}/min</p></div>
-                  <div className="p-4 bg-gray-50 rounded-lg"><p className="text-sm text-gray-500">Monthly Budget</p><p className="text-2xl font-bold text-gray-800">₹{((user?.monthly_budget || 0) * 83.5).toLocaleString('en-IN')}</p></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Rate Limit (requests/min)</label>
+                    <input type="number" defaultValue={user?.rate_limit || 100} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <p className="text-xs text-gray-500 mt-1">Maximum API requests per minute</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Budget (₹)</label>
+                    <input type="number" defaultValue={Math.round((user?.monthly_budget || 0) * 83.5)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <p className="text-xs text-gray-500 mt-1">Maximum monthly spending limit in INR</p>
+                  </div>
+                </div>
+                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500">Current Usage:</span>
+                      <span className="ml-2 font-medium text-gray-800">{user?.current_spend ? `₹${(user.current_spend * 83.5).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : '₹0'}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Budget Remaining:</span>
+                      <span className="ml-2 font-medium text-green-600">₹{((user?.monthly_budget - (user?.current_spend || 0)) * 83.5).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
               <div className="flex justify-end"><button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><Save size={18} />{saved ? 'Saved!' : 'Save Changes'}</button></div>
