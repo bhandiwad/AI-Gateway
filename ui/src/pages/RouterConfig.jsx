@@ -10,20 +10,19 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
-  Settings,
   Save,
   Play,
   ArrowRight,
-  Clock,
-  DollarSign,
+  ArrowUp,
+  ArrowDown,
   Activity,
-  Shield,
   Gauge,
   RotateCcw,
   Plus,
   Trash2,
   Copy,
-  Check
+  Check,
+  Edit2
 } from 'lucide-react';
 
 export default function RouterConfig() {
@@ -45,6 +44,8 @@ export default function RouterConfig() {
   const [checkingHealth, setCheckingHealth] = useState(false);
   const [copied, setCopied] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [editingTierName, setEditingTierName] = useState(null);
+  const [newTierName, setNewTierName] = useState('');
 
   const canEdit = hasPermission('router:edit');
 
@@ -80,7 +81,15 @@ export default function RouterConfig() {
       ]);
 
       setProviders(providersRes.data.providers || []);
-      setRoutingConfig(configRes.data);
+      const config = configRes.data;
+      if (!config.rate_limits_default) {
+        const routing = config;
+        config.rate_limits_default = {
+          requests_per_minute: routing.rate_limits?.default?.requests_per_minute || 100,
+          tokens_per_minute: routing.rate_limits?.default?.tokens_per_minute || 100000
+        };
+      }
+      setRoutingConfig(config);
       setFallbackChain(fallbackRes.data);
       setModels(modelsRes.data.models || modelsRes.data.data || modelsRes.data || []);
       setRoutingStats(statsRes.data.stats || []);
@@ -119,9 +128,27 @@ export default function RouterConfig() {
       setSuccess('Configuration saved successfully');
       setHasChanges(false);
       setTimeout(() => setSuccess(null), 3000);
+      
+      await fetchData();
     } catch (err) {
       console.error('Failed to save config:', err);
-      setError('Failed to save configuration');
+      let errorMsg = 'Failed to save configuration';
+      if (err.response?.data) {
+        if (typeof err.response.data === 'string') {
+          errorMsg = err.response.data;
+        } else if (err.response.data.detail) {
+          if (typeof err.response.data.detail === 'string') {
+            errorMsg = err.response.data.detail;
+          } else if (Array.isArray(err.response.data.detail)) {
+            errorMsg = err.response.data.detail.map(e => e.msg || e.message || JSON.stringify(e)).join(', ');
+          } else {
+            errorMsg = JSON.stringify(err.response.data.detail);
+          }
+        } else if (err.response.data.message) {
+          errorMsg = err.response.data.message;
+        }
+      }
+      setError(errorMsg);
     } finally {
       setSaving(false);
     }
@@ -186,23 +213,62 @@ export default function RouterConfig() {
     setHasChanges(true);
   };
 
+  const updateDefaultRateLimits = (field, value) => {
+    setRoutingConfig(prev => ({
+      ...prev,
+      rate_limits_default: {
+        ...prev.rate_limits_default,
+        [field]: parseInt(value) || 0
+      }
+    }));
+    setHasChanges(true);
+  };
+
   const updateTier = (tierName, field, value) => {
     setRoutingConfig(prev => ({
       ...prev,
       rate_limit_tiers: prev.rate_limit_tiers.map(t =>
-        t.name === tierName ? { ...t, [field]: parseInt(value) || 0 } : t
+        t.name === tierName ? { ...t, [field]: field === 'name' ? value : (parseInt(value) || 0) } : t
       )
     }));
     setHasChanges(true);
   };
 
+  const sanitizeTierName = (name) => {
+    return name.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+  };
+
+  const renameTier = (oldName, newName) => {
+    const sanitized = sanitizeTierName(newName);
+    if (!sanitized || sanitized === oldName) {
+      setEditingTierName(null);
+      setNewTierName('');
+      return;
+    }
+    const exists = routingConfig.rate_limit_tiers.some(t => t.name === sanitized && t.name !== oldName);
+    if (exists) {
+      setError(`Tier name "${sanitized}" already exists`);
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
+    updateTier(oldName, 'name', sanitized);
+    setEditingTierName(null);
+    setNewTierName('');
+  };
+
   const addTier = () => {
-    const newTierName = `tier_${Date.now()}`;
+    const existingNames = routingConfig.rate_limit_tiers.map(t => t.name);
+    let newName = 'custom';
+    let counter = 1;
+    while (existingNames.includes(newName)) {
+      newName = `custom_${counter}`;
+      counter++;
+    }
     setRoutingConfig(prev => ({
       ...prev,
       rate_limit_tiers: [
         ...prev.rate_limit_tiers,
-        { name: newTierName, requests_per_minute: 100, tokens_per_minute: 100000 }
+        { name: newName, requests_per_minute: 100, tokens_per_minute: 100000 }
       ]
     }));
     setHasChanges(true);
@@ -214,6 +280,35 @@ export default function RouterConfig() {
       rate_limit_tiers: prev.rate_limit_tiers.filter(t => t.name !== tierName)
     }));
     setHasChanges(true);
+  };
+
+  const addProviderToFallback = (provider) => {
+    const currentOrder = routingConfig?.fallback?.fallback_order || [];
+    if (!currentOrder.includes(provider)) {
+      updateFallback({ fallback_order: [...currentOrder, provider] });
+    }
+  };
+
+  const removeProviderFromFallback = (provider) => {
+    const currentOrder = routingConfig?.fallback?.fallback_order || [];
+    updateFallback({ fallback_order: currentOrder.filter(p => p !== provider) });
+  };
+
+  const moveProviderInFallback = (index, direction) => {
+    const currentOrder = [...(routingConfig?.fallback?.fallback_order || [])];
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= currentOrder.length) return;
+    [currentOrder[index], currentOrder[newIndex]] = [currentOrder[newIndex], currentOrder[index]];
+    updateFallback({ fallback_order: currentOrder });
+  };
+
+  const getAvailableProviders = () => {
+    const providerNames = providers.map(p => p.name);
+    const defaultProviders = ['openai', 'anthropic', 'google', 'xai', 'meta', 'mistral', 'cohere', 'aws-bedrock', 'azure-openai', 'local-vllm'];
+    const configProviders = routingConfig?.fallback?.fallback_order || [];
+    const currentDefault = routingConfig?.default_provider ? [routingConfig.default_provider] : [];
+    const allProviders = [...new Set([...providerNames, ...defaultProviders, ...configProviders, ...currentDefault])];
+    return allProviders.sort();
   };
 
   const copyProxyUrl = () => {
@@ -270,6 +365,10 @@ export default function RouterConfig() {
     );
   }
 
+  const fallbackOrder = routingConfig?.fallback?.fallback_order || [];
+  const allProviders = getAvailableProviders();
+  const unusedProviders = allProviders.filter(p => !fallbackOrder.includes(p));
+
   return (
     <div className="flex-1 flex flex-col min-h-0">
       <Header title="Router Configuration" />
@@ -305,6 +404,9 @@ export default function RouterConfig() {
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center gap-3">
               <AlertTriangle className="text-red-500" size={20} />
               <span className="text-red-700">{error}</span>
+              <button onClick={() => setError(null)} className="ml-auto text-red-500 hover:text-red-700">
+                <XCircle size={18} />
+              </button>
             </div>
           )}
 
@@ -372,7 +474,7 @@ client = OpenAI(
                   <RotateCcw size={24} className="text-gray-700" />
                   <h2 className="text-xl font-bold text-gray-900">Fallback & Retries</h2>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Fallback Enabled</label>
                     <button
@@ -409,26 +511,74 @@ client = OpenAI(
                       disabled={!canEdit}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                     >
-                      {providers.map(p => (
-                        <option key={p.name} value={p.name}>{p.name}</option>
+                      {getAvailableProviders().map(p => (
+                        <option key={p} value={p}>{p}</option>
                       ))}
                     </select>
                   </div>
                 </div>
-                <div className="mt-4">
+
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Fallback Order</label>
-                  <div className="flex flex-wrap gap-2">
-                    {(routingConfig?.fallback?.fallback_order || []).map((provider, idx) => (
-                      <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg">
-                        <span className="font-medium">{idx + 1}.</span>
-                        <span>{getProviderIcon(provider)}</span>
-                        <span className="capitalize">{provider}</span>
-                        {idx < (routingConfig?.fallback?.fallback_order || []).length - 1 && (
-                          <ArrowRight size={16} className="text-gray-400" />
+                  <p className="text-sm text-gray-500 mb-3">Use arrows to reorder providers. Requests will fallback in this order if the primary fails.</p>
+                  <div className="space-y-2 mb-4">
+                    {fallbackOrder.map((provider, idx) => (
+                      <div key={provider} className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+                        <span className="font-medium text-gray-600 w-6">{idx + 1}.</span>
+                        <span className="text-xl">{getProviderIcon(provider)}</span>
+                        <span className="capitalize flex-1">{provider}</span>
+                        {canEdit && (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => moveProviderInFallback(idx, 'up')}
+                              disabled={idx === 0}
+                              className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                              title="Move up"
+                            >
+                              <ArrowUp size={16} />
+                            </button>
+                            <button
+                              onClick={() => moveProviderInFallback(idx, 'down')}
+                              disabled={idx === fallbackOrder.length - 1}
+                              className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                              title="Move down"
+                            >
+                              <ArrowDown size={16} />
+                            </button>
+                            <button
+                              onClick={() => removeProviderFromFallback(provider)}
+                              className="p-1 text-gray-400 hover:text-red-600"
+                              title="Remove"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         )}
                       </div>
                     ))}
+                    {fallbackOrder.length === 0 && (
+                      <p className="text-sm text-gray-400 italic py-2">No providers in fallback chain. Add providers below.</p>
+                    )}
                   </div>
+
+                  {canEdit && unusedProviders.length > 0 && (
+                    <div>
+                      <p className="text-sm text-gray-500 mb-2">Add provider to fallback chain:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {unusedProviders.map(provider => (
+                          <button
+                            key={provider}
+                            onClick={() => addProviderToFallback(provider)}
+                            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 border border-blue-200"
+                          >
+                            <Plus size={14} />
+                            <span>{getProviderIcon(provider)}</span>
+                            <span className="capitalize">{provider}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -448,6 +598,33 @@ client = OpenAI(
                     </button>
                   )}
                 </div>
+                
+                <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Default Rate Limits</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Requests per minute</label>
+                      <input
+                        type="number"
+                        value={routingConfig?.rate_limits_default?.requests_per_minute || 100}
+                        onChange={(e) => canEdit && updateDefaultRateLimits('requests_per_minute', e.target.value)}
+                        disabled={!canEdit}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Tokens per minute</label>
+                      <input
+                        type="number"
+                        value={routingConfig?.rate_limits_default?.tokens_per_minute || 100000}
+                        onChange={(e) => canEdit && updateDefaultRateLimits('tokens_per_minute', e.target.value)}
+                        disabled={!canEdit}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <p className="text-gray-600 mb-4">Configure rate limit tiers for different user/API key levels</p>
                 
                 <div className="overflow-x-auto">
@@ -464,9 +641,34 @@ client = OpenAI(
                       {(routingConfig?.rate_limit_tiers || []).map((tier) => (
                         <tr key={tier.name} className="hover:bg-gray-50">
                           <td className="px-4 py-3">
-                            <span className="px-2 py-1 bg-gray-100 rounded text-sm font-medium capitalize">
-                              {tier.name}
-                            </span>
+                            {editingTierName === tier.name ? (
+                              <input
+                                type="text"
+                                value={newTierName}
+                                onChange={(e) => setNewTierName(e.target.value)}
+                                onBlur={() => renameTier(tier.name, newTierName)}
+                                onKeyDown={(e) => e.key === 'Enter' && renameTier(tier.name, newTierName)}
+                                autoFocus
+                                className="w-32 px-2 py-1 border border-blue-300 rounded focus:ring-2 focus:ring-blue-500"
+                              />
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <span className="px-2 py-1 bg-gray-100 rounded text-sm font-medium capitalize">
+                                  {tier.name}
+                                </span>
+                                {canEdit && (
+                                  <button
+                                    onClick={() => {
+                                      setEditingTierName(tier.name);
+                                      setNewTierName(tier.name);
+                                    }}
+                                    className="p-1 text-gray-400 hover:text-gray-600"
+                                  >
+                                    <Edit2 size={14} />
+                                  </button>
+                                )}
+                              </div>
+                            )}
                           </td>
                           <td className="px-4 py-3">
                             <input

@@ -1,49 +1,42 @@
 routing:
   default_provider: openai
   default_model: gpt-4o-mini
-
   strategies:
-    - name: cost_optimized
-      description: Route to cheapest available model
-      priority_order:
-        - gpt-4o-mini
-        - claude-3-haiku-20240307
-        - gpt-3.5-turbo
-
-    - name: quality_first
-      description: Route to highest quality model
-      priority_order:
-        - claude-3-opus-20240229
-        - gpt-4o
-        - claude-3-5-sonnet-20241022
-
-    - name: balanced
-      description: Balance between cost and quality
-      priority_order:
-        - gpt-4o
-        - claude-3-5-sonnet-20241022
-        - gpt-4o-mini
-
+  - name: cost_optimized
+    description: Route to cheapest available model
+    priority_order:
+    - gpt-4o-mini
+    - claude-3-haiku-20240307
+    - gpt-3.5-turbo
+  - name: quality_first
+    description: Route to highest quality model
+    priority_order:
+    - claude-3-opus-20240229
+    - gpt-4o
+    - claude-3-5-sonnet-20241022
+  - name: balanced
+    description: Balance between cost and quality
+    priority_order:
+    - gpt-4o
+    - claude-3-5-sonnet-20241022
+    - gpt-4o-mini
   fallback:
     enabled: true
-    max_retries: 2
+    max_retries: 3
     fallback_order:
-      - openai
-      - anthropic
-      - local-vllm
-
+    - openai
+    - anthropic
+    - local-vllm
   model_aliases:
     gpt-4: gpt-4o
     claude-3: claude-3-5-sonnet-20241022
     fast: gpt-4o-mini
     smart: gpt-4o
     cheap: gpt-3.5-turbo
-
   rate_limits:
     default:
       requests_per_minute: 100
       tokens_per_minute: 100000
-
     tiers:
       free:
         requests_per_minute: 10
@@ -57,12 +50,10 @@ routing:
       enterprise:
         requests_per_minute: 1000
         tokens_per_minute: 1000000
-
   load_balancing:
     enabled: false
     strategy: round_robin
     health_check_interval: 30
-
   caching:
     enabled: false
     ttl_seconds: 3600
