@@ -53,7 +53,7 @@ export default function RouterConfig() {
         api.get('/admin/router/fallback-chain', {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        api.get('/admin/models', {
+        api.get('/admin/models/settings', {
           headers: { Authorization: `Bearer ${token}` }
         }),
         api.get('/admin/router/stats', {
@@ -473,8 +473,8 @@ export default function RouterConfig() {
                         <div className="flex items-center gap-2">
                           <span className="text-lg">{getProviderIcon(model.provider)}</span>
                           <div>
-                            <p className="font-medium text-gray-900">{model.id}</p>
-                            <p className="text-sm text-gray-500 hidden sm:block">{model.description || 'AI language model'}</p>
+                            <p className="font-medium text-gray-900">{model.name || model.id}</p>
+                            <p className="text-sm text-gray-500 hidden sm:block">{model.id}</p>
                           </div>
                         </div>
                       </td>
@@ -482,20 +482,20 @@ export default function RouterConfig() {
                         <span className="capitalize">{model.provider}</span>
                       </td>
                       <td className="px-4 py-3 hidden md:table-cell">
-                        <span className="text-gray-600">{model.context_window?.toLocaleString() || 'N/A'}</span>
+                        <span className="text-gray-600">{((model.context_length || model.context_window || 0) / 1000).toFixed(0)}K</span>
                       </td>
                       <td className="px-4 py-3 hidden lg:table-cell">
                         <div className="text-sm">
                           <p className="text-gray-600">
-                            ${model.input_cost_per_1k || '0.00'}/1K in
+                            ₹{((model.input_cost_per_1k || 0) * 83.5).toFixed(4)}/1K in
                           </p>
                           <p className="text-gray-600">
-                            ${model.output_cost_per_1k || '0.00'}/1K out
+                            ₹{((model.output_cost_per_1k || 0) * 83.5).toFixed(4)}/1K out
                           </p>
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        {getStatusBadge('active')}
+                        {model.is_enabled !== false ? getStatusBadge('active') : getStatusBadge('inactive')}
                       </td>
                     </tr>
                   ))}
