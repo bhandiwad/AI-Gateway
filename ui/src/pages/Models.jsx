@@ -125,12 +125,19 @@ export default function Models() {
 
   const getProviderColor = (provider) => {
     const colors = {
-      openai: 'bg-green-100 text-green-800 border-green-200',
-      anthropic: 'bg-orange-100 text-orange-800 border-orange-200',
-      google: 'bg-blue-100 text-blue-800 border-blue-200',
-      mock: 'bg-gray-100 text-gray-800 border-gray-200',
+      openai: 'bg-slate-100 text-slate-800 border-slate-300',
+      anthropic: 'bg-slate-100 text-slate-800 border-slate-300',
+      google: 'bg-slate-100 text-slate-800 border-slate-300',
+      xai: 'bg-slate-100 text-slate-800 border-slate-300',
+      meta: 'bg-slate-100 text-slate-800 border-slate-300',
+      mistral: 'bg-slate-100 text-slate-800 border-slate-300',
+      cohere: 'bg-slate-100 text-slate-800 border-slate-300',
+      'aws-bedrock': 'bg-slate-100 text-slate-800 border-slate-300',
+      'azure-openai': 'bg-slate-100 text-slate-800 border-slate-300',
+      'local-vllm': 'bg-slate-100 text-slate-800 border-slate-300',
+      mock: 'bg-gray-100 text-gray-600 border-gray-300',
     };
-    return colors[provider] || 'bg-purple-100 text-purple-800 border-purple-200';
+    return colors[provider] || 'bg-slate-100 text-slate-800 border-slate-300';
   };
 
   const formatCost = (cost) => {
