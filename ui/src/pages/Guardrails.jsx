@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { 
   Shield, 
@@ -14,15 +15,18 @@ import {
   Plus,
   Edit2,
   Trash2,
-  X
+  ExternalLink,
+  ChevronRight,
+  Layers
 } from 'lucide-react';
 
 export default function Guardrails() {
   const { token, hasPermission } = useAuth();
+  const navigate = useNavigate();
   const [guardrails, setGuardrails] = useState([]);
-  const [bfsiGuardrails, setBfsiGuardrails] = useState(null);
+  const [enterpriseInfo, setEnterpriseInfo] = useState(null);
+  const [profiles, setProfiles] = useState([]);
   const [policies, setPolicies] = useState([]);
-  const [customPolicies, setCustomPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [testInput, setTestInput] = useState('');
@@ -31,20 +35,6 @@ export default function Guardrails() {
   const [selectedPolicy, setSelectedPolicy] = useState('strict');
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
-  const [showPolicyModal, setShowPolicyModal] = useState(false);
-  const [editingPolicy, setEditingPolicy] = useState(null);
-  const [policyForm, setPolicyForm] = useState({
-    name: '',
-    description: '',
-    config: {
-      pii_detection: { enabled: true, action: 'redact' },
-      toxicity_filter: { enabled: true, threshold: 0.7, action: 'block' },
-      prompt_injection: { enabled: true, action: 'block' },
-      jailbreak_detection: { enabled: true, action: 'block' },
-      financial_advice: { enabled: false, action: 'warn' },
-      max_tokens: { enabled: true, limit: 4096 }
-    }
-  });
 
   const canEdit = hasPermission('guardrails:edit');
 
@@ -57,7 +47,7 @@ export default function Guardrails() {
       setLoading(true);
       setError(null);
 
-      const [guardrailsRes, bfsiRes, policiesRes, customRes] = await Promise.all([
+      const [guardrailsRes, enterpriseRes, policiesRes, profilesRes] = await Promise.all([
         api.get('/admin/guardrails', {
           headers: { Authorization: `Bearer ${token}` }
         }),
@@ -67,15 +57,15 @@ export default function Guardrails() {
         api.get('/admin/guardrails/policies', {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        api.get('/admin/guardrails/custom', {
+        api.get('/admin/providers/profiles/list', {
           headers: { Authorization: `Bearer ${token}` }
-        }).catch(() => ({ data: { policies: [] } }))
+        }).catch(() => ({ data: [] }))
       ]);
 
       setGuardrails(guardrailsRes.data.guardrails || []);
-      setBfsiGuardrails(bfsiRes.data);
+      setEnterpriseInfo(enterpriseRes.data);
       setPolicies(policiesRes.data.policies || []);
-      setCustomPolicies(customRes.data.policies || []);
+      setProfiles(profilesRes.data || []);
     } catch (err) {
       console.error('Failed to fetch guardrails:', err);
       setError('Failed to load guardrails configuration');
@@ -124,78 +114,17 @@ export default function Guardrails() {
     }
   };
 
-  const openCreateModal = () => {
-    setEditingPolicy(null);
-    setPolicyForm({
-      name: '',
-      description: '',
-      config: {
-        pii_detection: { enabled: true, action: 'redact' },
-        toxicity_filter: { enabled: true, threshold: 0.7, action: 'block' },
-        prompt_injection: { enabled: true, action: 'block' },
-        jailbreak_detection: { enabled: true, action: 'block' },
-        financial_advice: { enabled: false, action: 'warn' },
-        max_tokens: { enabled: true, limit: 4096 }
-      }
-    });
-    setShowPolicyModal(true);
-  };
-
-  const openEditModal = (policy) => {
-    setEditingPolicy(policy);
-    setPolicyForm({
-      name: policy.name,
-      description: policy.description || '',
-      config: policy.config || {}
-    });
-    setShowPolicyModal(true);
-  };
-
-  const saveCustomPolicy = async () => {
-    try {
-      setSaving(true);
-      if (editingPolicy) {
-        await api.put(`/admin/guardrails/custom/${editingPolicy.id}`, policyForm, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-      } else {
-        await api.post('/admin/guardrails/custom', policyForm, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-      }
-      setShowPolicyModal(false);
-      fetchGuardrails();
-    } catch (err) {
-      console.error('Failed to save policy:', err);
-      setError('Failed to save policy');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const deleteCustomPolicy = async (policyId) => {
-    if (!confirm('Are you sure you want to delete this policy?')) return;
+  const deleteProfile = async (profileId) => {
+    if (!confirm('Are you sure you want to delete this guardrail profile?')) return;
     
     try {
-      await api.delete(`/admin/guardrails/custom/${policyId}`, {
+      await api.delete(`/admin/providers/profiles/${profileId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchGuardrails();
     } catch (err) {
-      console.error('Failed to delete policy:', err);
-      setError('Failed to delete policy');
-    }
-  };
-
-  const activateCustomPolicy = async (policyId) => {
-    try {
-      await api.post(`/admin/guardrails/custom/${policyId}/activate`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      fetchGuardrails();
-    } catch (err) {
-      console.error('Failed to activate policy:', err);
-      setError('Failed to activate policy');
+      console.error('Failed to delete profile:', err);
+      setError('Failed to delete profile');
     }
   };
 
@@ -220,7 +149,7 @@ export default function Guardrails() {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-600"></div>
       </div>
     );
   }
@@ -231,18 +160,16 @@ export default function Guardrails() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Guardrails</h1>
-            <p className="text-gray-600 mt-1">Enterprise safety and compliance controls</p>
+            <p className="text-gray-600 mt-1">Enterprise safety and compliance controls for AI requests</p>
           </div>
           <div className="flex gap-2">
-            {canEdit && (
-              <button
-                onClick={openCreateModal}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 min-h-[44px]"
-              >
-                <Plus size={18} />
-                <span>New Policy</span>
-              </button>
-            )}
+            <button
+              onClick={() => navigate('/router-config?tab=profiles')}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 min-h-[44px]"
+            >
+              <Plus size={18} />
+              <span>Create Profile</span>
+            </button>
             <button
               onClick={fetchGuardrails}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 min-h-[44px]"
@@ -261,124 +188,237 @@ export default function Guardrails() {
         )}
 
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-          {['overview', 'custom', 'bfsi', 'test', 'settings'].map((tab) => (
+          {['overview', 'profiles', 'templates', 'test', 'settings'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap min-h-[44px] ${
                 activeTab === tab
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-gray-900 text-white'
                   : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-300'
               }`}
             >
-              {tab === 'custom' ? 'Custom Policies' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tab === 'profiles' ? 'Guardrail Profiles' : 
+               tab === 'templates' ? 'Enterprise Templates' :
+               tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
           ))}
         </div>
 
         {activeTab === 'overview' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {guardrails.map((guardrail, idx) => (
-              <div key={idx} className="bg-white rounded-lg shadow p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Shield className="text-blue-600" size={20} />
-                    <h3 className="font-semibold">{guardrail.name}</h3>
+          <div className="space-y-6">
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <Info size={20} className="text-gray-600" />
+                How Guardrails Work
+              </h2>
+              <div className="space-y-4 text-sm text-gray-600">
+                <p>
+                  Guardrails protect your AI Gateway by inspecting requests and responses for security threats, 
+                  compliance violations, and sensitive data. They run automatically on every API request.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="font-medium text-gray-900 mb-2">Request Processing</h3>
+                    <ul className="space-y-1 text-sm">
+                      <li className="flex items-center gap-2">
+                        <ChevronRight size={14} className="text-gray-400" />
+                        PII detection and redaction
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <ChevronRight size={14} className="text-gray-400" />
+                        Prompt injection blocking
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <ChevronRight size={14} className="text-gray-400" />
+                        Jailbreak attempt detection
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <ChevronRight size={14} className="text-gray-400" />
+                        Content classification
+                      </li>
+                    </ul>
                   </div>
-                  {getStatusIcon(guardrail.enabled)}
-                </div>
-                <p className="text-sm text-gray-600 mb-3">{guardrail.description}</p>
-                <div className="flex items-center justify-between text-sm">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSeverityColor(guardrail.severity)}`}>
-                    {guardrail.severity}
-                  </span>
-                  <span className="text-gray-500">{guardrail.category}</span>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="font-medium text-gray-900 mb-2">Response Processing</h3>
+                    <ul className="space-y-1 text-sm">
+                      <li className="flex items-center gap-2">
+                        <ChevronRight size={14} className="text-gray-400" />
+                        Output PII scanning
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <ChevronRight size={14} className="text-gray-400" />
+                        Toxicity filtering
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <ChevronRight size={14} className="text-gray-400" />
+                        Sensitive topic detection
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <ChevronRight size={14} className="text-gray-400" />
+                        Content sanitization
+                      </li>
+                    </ul>
+                  </div>
                 </div>
               </div>
-            ))}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {guardrails.map((guardrail, idx) => (
+                <div key={idx} className="bg-white rounded-lg shadow p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Shield className="text-gray-600" size={20} />
+                      <h3 className="font-semibold">{guardrail.name}</h3>
+                    </div>
+                    {getStatusIcon(guardrail.enabled)}
+                  </div>
+                  <p className="text-sm text-gray-600 mb-3">{guardrail.description}</p>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSeverityColor(guardrail.severity)}`}>
+                      {guardrail.severity}
+                    </span>
+                    <span className="text-gray-500">{guardrail.category}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
-        {activeTab === 'custom' && (
+        {activeTab === 'profiles' && (
           <div className="space-y-4">
-            {customPolicies.length === 0 ? (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <Layers className="text-gray-500 mt-0.5" size={20} />
+                <div>
+                  <h3 className="font-medium text-gray-900">Guardrail Profiles</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Profiles define chains of request and response processors that run on API calls. 
+                    Assign profiles to tenants, API keys, or routes to apply specific guardrail rules.
+                  </p>
+                  <button
+                    onClick={() => navigate('/router-config?tab=profiles')}
+                    className="mt-3 inline-flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900"
+                  >
+                    <span>Manage in Router Config</span>
+                    <ExternalLink size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {profiles.length === 0 ? (
               <div className="bg-white rounded-lg shadow p-8 text-center">
                 <Shield className="mx-auto text-gray-400 mb-4" size={48} />
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">No Custom Policies</h3>
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">No Guardrail Profiles</h3>
                 <p className="text-gray-500 mb-4">
-                  Create custom guardrail policies tailored to your organization's needs.
+                  Create guardrail profiles to define custom processor chains for your API requests.
                 </p>
-                {canEdit && (
-                  <button
-                    onClick={openCreateModal}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                  >
-                    <Plus size={18} />
-                    Create Policy
-                  </button>
-                )}
+                <button
+                  onClick={() => navigate('/router-config?tab=profiles')}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+                >
+                  <Plus size={18} />
+                  Create Profile
+                </button>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {customPolicies.map((policy) => (
-                  <div key={policy.id} className="bg-white rounded-lg shadow p-4">
+                {profiles.map((profile) => (
+                  <div key={profile.id} className="bg-white rounded-lg shadow p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">{policy.name}</h3>
-                          {policy.is_default && (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-semibold">{profile.name}</h3>
+                          {profile.is_enabled !== false && (
                             <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full">
                               Active
                             </span>
                           )}
-                          {!policy.is_active && (
-                            <span className="px-2 py-0.5 bg-gray-100 text-gray-800 text-xs rounded-full">
-                              Disabled
+                          {profile.tenant_id === null && (
+                            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
+                              Global
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">{policy.description}</p>
+                        <p className="text-sm text-gray-600 mt-1">{profile.description || 'No description'}</p>
                       </div>
                       {canEdit && (
                         <div className="flex gap-2">
-                          <button
-                            onClick={() => openEditModal(policy)}
-                            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                          <button
-                            onClick={() => deleteCustomPolicy(policy.id)}
-                            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          {profile.tenant_id !== null ? (
+                            <button
+                              onClick={() => navigate('/router-config?tab=profiles')}
+                              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded"
+                              title="Edit profile"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                          ) : (
+                            <span 
+                              className="p-2 text-gray-300 cursor-not-allowed"
+                              title="Global profiles are read-only"
+                            >
+                              <Edit2 size={16} />
+                            </span>
+                          )}
+                          {profile.tenant_id !== null ? (
+                            <button
+                              onClick={() => deleteProfile(profile.id)}
+                              className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"
+                              title="Delete profile"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          ) : (
+                            <span 
+                              className="p-2 text-gray-300 cursor-not-allowed"
+                              title="Global profiles cannot be deleted"
+                            >
+                              <Trash2 size={16} />
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-2 text-xs mb-3">
-                      {Object.entries(policy.config || {}).slice(0, 4).map(([key, value]) => (
-                        <div key={key} className="flex items-center gap-1">
-                          {value?.enabled ? (
-                            <CheckCircle className="text-green-500" size={12} />
-                          ) : (
-                            <XCircle className="text-gray-400" size={12} />
-                          )}
-                          <span className="text-gray-600">
-                            {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                          </span>
-                        </div>
-                      ))}
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-500">Request Processors:</span>
+                        <span className="ml-2 font-medium">
+                          {(profile.request_processors || []).length}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Response Processors:</span>
+                        <span className="ml-2 font-medium">
+                          {(profile.response_processors || []).length}
+                        </span>
+                      </div>
                     </div>
-                    
-                    {canEdit && !policy.is_default && (
-                      <button
-                        onClick={() => activateCustomPolicy(policy.id)}
-                        className="w-full mt-2 px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100"
-                      >
-                        Set as Active
-                      </button>
+
+                    {((profile.request_processors || []).length > 0 || 
+                      (profile.response_processors || []).length > 0) && (
+                      <div className="mt-3 pt-3 border-t border-gray-100">
+                        <div className="flex flex-wrap gap-1">
+                          {(profile.request_processors || []).slice(0, 3).map((p, idx) => (
+                            <span key={idx} className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded">
+                              {p.name || p.type}
+                            </span>
+                          ))}
+                          {(profile.response_processors || []).slice(0, 3).map((p, idx) => (
+                            <span key={idx} className="px-2 py-0.5 bg-purple-50 text-purple-700 text-xs rounded">
+                              {p.name || p.type}
+                            </span>
+                          ))}
+                          {((profile.request_processors || []).length + (profile.response_processors || []).length) > 6 && (
+                            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
+                              +{(profile.request_processors || []).length + (profile.response_processors || []).length - 6} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -387,31 +427,31 @@ export default function Guardrails() {
           </div>
         )}
 
-        {activeTab === 'bfsi' && bfsiGuardrails && (
+        {activeTab === 'templates' && enterpriseInfo && (
           <div className="space-y-6">
             <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-4">
                 <Shield size={32} className="text-gray-700" />
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">Compliance Suite</h2>
-                  <p className="text-gray-600">Industry compliance guardrails</p>
+                  <h2 className="text-xl font-bold text-gray-900">Enterprise Compliance Templates</h2>
+                  <p className="text-gray-600">Pre-built guardrail configurations for common compliance requirements</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                  <p className="text-2xl font-bold text-gray-900">{bfsiGuardrails.total_rules || 0}</p>
+                  <p className="text-2xl font-bold text-gray-900">{enterpriseInfo.total_rules || 0}</p>
                   <p className="text-sm text-gray-500">Total Rules</p>
                 </div>
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                  <p className="text-2xl font-bold text-gray-900">{bfsiGuardrails.enabled_count || 0}</p>
+                  <p className="text-2xl font-bold text-gray-900">{enterpriseInfo.enabled_count || 0}</p>
                   <p className="text-sm text-gray-500">Active</p>
                 </div>
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                  <p className="text-2xl font-bold text-gray-900">{bfsiGuardrails.pii_patterns || 0}</p>
+                  <p className="text-2xl font-bold text-gray-900">{enterpriseInfo.pii_patterns || 0}</p>
                   <p className="text-sm text-gray-500">PII Patterns</p>
                 </div>
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                  <p className="text-2xl font-bold text-gray-900">{bfsiGuardrails.compliance_frameworks?.length || 0}</p>
+                  <p className="text-2xl font-bold text-gray-900">{enterpriseInfo.compliance_frameworks?.length || 0}</p>
                   <p className="text-sm text-gray-500">Frameworks</p>
                 </div>
               </div>
@@ -420,11 +460,11 @@ export default function Guardrails() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white rounded-lg shadow p-4">
                 <h3 className="font-semibold mb-4 flex items-center gap-2">
-                  <Info className="text-blue-600" size={20} />
-                  PII Detection
+                  <Info className="text-gray-600" size={20} />
+                  PII Detection Patterns
                 </h3>
                 <div className="space-y-2">
-                  {(bfsiGuardrails.pii_types || ['SSN', 'Credit Card', 'Bank Account', 'Aadhaar', 'PAN']).map((type, idx) => (
+                  {(enterpriseInfo.pii_types || ['SSN', 'Credit Card', 'Bank Account', 'Aadhaar', 'PAN', 'Email', 'Phone']).map((type, idx) => (
                     <div key={idx} className="flex items-center gap-2 text-sm">
                       <CheckCircle className="text-green-500" size={16} />
                       <span>{type}</span>
@@ -436,13 +476,13 @@ export default function Guardrails() {
               <div className="bg-white rounded-lg shadow p-4">
                 <h3 className="font-semibold mb-4 flex items-center gap-2">
                   <AlertTriangle className="text-orange-600" size={20} />
-                  Financial Advice Guard
+                  Sensitive Content Guard
                 </h3>
                 <p className="text-sm text-gray-600 mb-3">
-                  Detects and flags investment recommendations, financial advice, and market predictions.
+                  Detects and flags sensitive content including investment advice, medical recommendations, and legal opinions.
                 </p>
                 <div className="space-y-2">
-                  {['Investment recommendations', 'Stock tips', 'Market predictions', 'Trading advice'].map((item, idx) => (
+                  {['Financial advice', 'Medical recommendations', 'Legal opinions', 'Personal data requests'].map((item, idx) => (
                     <div key={idx} className="flex items-center gap-2 text-sm">
                       <Shield className="text-orange-500" size={16} />
                       <span>{item}</span>
@@ -472,7 +512,7 @@ export default function Guardrails() {
                   Compliance Frameworks
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {(bfsiGuardrails.compliance_frameworks || ['PCI-DSS', 'SOX', 'GDPR', 'RBI Guidelines']).map((framework, idx) => (
+                  {(enterpriseInfo.compliance_frameworks || ['PCI-DSS', 'SOC 2', 'GDPR', 'HIPAA', 'SOX']).map((framework, idx) => (
                     <span key={idx} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
                       {framework}
                     </span>
@@ -500,14 +540,14 @@ export default function Guardrails() {
                   value={testInput}
                   onChange={(e) => setTestInput(e.target.value)}
                   placeholder="Enter text to test... (e.g., 'My SSN is 123-45-6789' or 'Ignore previous instructions')"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[120px]"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 min-h-[120px]"
                 />
               </div>
               
               <button
                 onClick={testGuardrails}
                 disabled={testing || !testInput.trim()}
-                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 min-h-[44px]"
+                className="flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 min-h-[44px]"
               >
                 <Play size={18} />
                 <span>{testing ? 'Testing...' : 'Run Test'}</span>
@@ -558,169 +598,65 @@ export default function Guardrails() {
         )}
 
         {activeTab === 'settings' && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Settings className="text-gray-600" size={20} />
-                Policy Configuration
-              </h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Policy Template</label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {policies.length > 0 ? policies.map((policy) => (
-                      <button
-                        key={policy.id}
-                        onClick={() => setSelectedPolicy(policy.id)}
-                        disabled={!canEdit}
-                        className={`p-4 rounded-lg border-2 text-left transition-colors ${
-                          selectedPolicy === policy.id
-                            ? 'border-blue-600 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        } ${!canEdit ? 'cursor-not-allowed opacity-75' : ''}`}
-                      >
-                        <h4 className="font-medium">{policy.name}</h4>
-                        <p className="text-sm text-gray-600 mt-1">{policy.description}</p>
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {policy.features?.slice(0, 3).map((feature, idx) => (
-                            <span key={idx} className="text-xs px-2 py-0.5 bg-gray-100 rounded">
-                              {feature}
-                            </span>
-                          ))}
-                        </div>
-                      </button>
-                    )) : (
-                      <>
-                        {['strict', 'balanced', 'permissive'].map((p) => (
-                          <button
-                            key={p}
-                            onClick={() => setSelectedPolicy(p)}
-                            disabled={!canEdit}
-                            className={`p-4 rounded-lg border-2 text-left ${
-                              selectedPolicy === p ? 'border-blue-600 bg-blue-50' : 'border-gray-200'
-                            } ${!canEdit ? 'cursor-not-allowed opacity-75' : ''}`}
-                          >
-                            <h4 className="font-medium capitalize">{p}</h4>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {p === 'strict' && 'Maximum protection for regulated environments'}
-                              {p === 'balanced' && 'Balance between safety and usability'}
-                              {p === 'permissive' && 'Minimal restrictions for internal use'}
-                            </p>
-                          </button>
-                        ))}
-                      </>
-                    )}
-                  </div>
-                </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="font-semibold mb-4 flex items-center gap-2">
+              <Settings className="text-gray-600" size={20} />
+              Default Policy Settings
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Select the default guardrail policy template for your organization. This determines the baseline level of protection.
+            </p>
 
-                {canEdit && (
-                  <button
-                    onClick={updatePolicy}
-                    disabled={saving}
-                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 min-h-[44px]"
+            <div className="space-y-4 mb-6">
+              {(policies || []).length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No policy templates available. Contact support to configure policy templates.</p>
+                </div>
+              ) : (
+                (policies || []).map((policy) => (
+                  <label
+                    key={policy.id}
+                    className={`flex items-start gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${
+                      selectedPolicy === policy.id
+                        ? 'border-gray-900 bg-gray-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
                   >
-                    <Save size={18} />
-                    <span>{saving ? 'Saving...' : 'Save Policy'}</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showPolicyModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between p-4 border-b">
-                <h3 className="text-lg font-semibold">
-                  {editingPolicy ? 'Edit Policy' : 'Create Custom Policy'}
-                </h3>
-                <button
-                  onClick={() => setShowPolicyModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-full"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              
-              <div className="p-4 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Policy Name</label>
-                  <input
-                    type="text"
-                    value={policyForm.name}
-                    onChange={(e) => setPolicyForm({...policyForm, name: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., Strict Compliance Policy"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                  <textarea
-                    value={policyForm.description}
-                    onChange={(e) => setPolicyForm({...policyForm, description: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    rows={2}
-                    placeholder="Describe this policy..."
-                  />
-                </div>
-
-                <div className="border-t pt-4">
-                  <h4 className="font-medium mb-3">Guardrail Settings</h4>
-                  <div className="space-y-3">
-                    {[
-                      { key: 'pii_detection', label: 'PII Detection', desc: 'Detect and redact personally identifiable information' },
-                      { key: 'toxicity_filter', label: 'Toxicity Filter', desc: 'Block toxic or harmful content' },
-                      { key: 'prompt_injection', label: 'Prompt Injection Detection', desc: 'Block manipulation attempts' },
-                      { key: 'jailbreak_detection', label: 'Jailbreak Detection', desc: 'Prevent AI safety bypass' },
-                      { key: 'financial_advice', label: 'Financial Advice Guard', desc: 'Flag investment recommendations' },
-                    ].map((item) => (
-                      <div key={item.key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div>
-                          <p className="font-medium text-sm">{item.label}</p>
-                          <p className="text-xs text-gray-500">{item.desc}</p>
-                        </div>
-                        <button
-                          onClick={() => {
-                            const newConfig = {...policyForm.config};
-                            if (!newConfig[item.key]) newConfig[item.key] = { enabled: false };
-                            newConfig[item.key].enabled = !newConfig[item.key]?.enabled;
-                            setPolicyForm({...policyForm, config: newConfig});
-                          }}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            policyForm.config[item.key]?.enabled ? 'bg-green-600' : 'bg-gray-300'
-                          }`}
-                        >
-                          <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                              policyForm.config[item.key]?.enabled ? 'translate-x-6' : 'translate-x-1'
-                            }`}
-                          />
-                        </button>
+                    <input
+                      type="radio"
+                      name="policy"
+                      value={policy.id}
+                      checked={selectedPolicy === policy.id}
+                      onChange={(e) => setSelectedPolicy(e.target.value)}
+                      className="mt-1"
+                      disabled={!canEdit}
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{policy.name}</span>
+                        {policy.id === 'strict' && (
+                          <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full">
+                            Recommended
+                          </span>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex justify-end gap-3 p-4 border-t">
-                <button
-                  onClick={() => setShowPolicyModal(false)}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={saveCustomPolicy}
-                  disabled={saving || !policyForm.name.trim()}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {saving ? 'Saving...' : (editingPolicy ? 'Update Policy' : 'Create Policy')}
-                </button>
-              </div>
+                      <p className="text-sm text-gray-600 mt-1">{policy.description}</p>
+                    </div>
+                  </label>
+                ))
+              )}
             </div>
+
+            {canEdit && (policies || []).length > 0 && (
+              <button
+                onClick={updatePolicy}
+                disabled={saving}
+                className="flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50"
+              >
+                <Save size={18} />
+                <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+              </button>
+            )}
           </div>
         )}
       </div>

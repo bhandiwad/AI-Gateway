@@ -359,6 +359,70 @@ def create_guardrail_profile(
     return profile
 
 
+def update_guardrail_profile(
+    db: Session,
+    profile_id: int,
+    tenant_id: Optional[int] = None,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    request_processors: Optional[List[Dict[str, Any]]] = None,
+    response_processors: Optional[List[Dict[str, Any]]] = None,
+    logging_level: Optional[str] = None,
+    config: Optional[Dict[str, Any]] = None,
+    is_enabled: Optional[bool] = None
+) -> Optional[GuardrailProfile]:
+    profile = db.query(GuardrailProfile).filter(GuardrailProfile.id == profile_id).first()
+    
+    if not profile:
+        return None
+    
+    if profile.tenant_id is None and tenant_id is not None:
+        return None
+    
+    if tenant_id is not None and profile.tenant_id is not None and profile.tenant_id != tenant_id:
+        return None
+    
+    if name is not None:
+        profile.name = name
+    if description is not None:
+        profile.description = description
+    if request_processors is not None:
+        profile.request_processors = request_processors
+    if response_processors is not None:
+        profile.response_processors = response_processors
+    if logging_level is not None:
+        profile.logging_level = logging_level
+    if config is not None:
+        profile.config = config
+    if is_enabled is not None:
+        profile.is_enabled = is_enabled
+    
+    db.commit()
+    db.refresh(profile)
+    
+    return profile
+
+
+def delete_guardrail_profile(
+    db: Session,
+    profile_id: int,
+    tenant_id: Optional[int] = None
+) -> bool:
+    query = db.query(GuardrailProfile).filter(GuardrailProfile.id == profile_id)
+    
+    if tenant_id is not None:
+        query = query.filter(GuardrailProfile.tenant_id == tenant_id)
+    
+    profile = query.first()
+    if not profile:
+        return False
+    
+    db.delete(profile)
+    db.commit()
+    
+    return True
+
+
 def list_processor_definitions(db: Session) -> List[ProcessorDefinition]:
     return db.query(ProcessorDefinition).order_by(ProcessorDefinition.stage, ProcessorDefinition.name).all()
 

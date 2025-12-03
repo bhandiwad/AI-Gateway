@@ -170,6 +170,16 @@ class GuardrailProfileCreate(BaseModel):
     config: Dict[str, Any] = Field(default_factory=dict)
 
 
+class GuardrailProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    request_processors: Optional[List[Dict[str, Any]]] = None
+    response_processors: Optional[List[Dict[str, Any]]] = None
+    logging_level: Optional[str] = None
+    config: Optional[Dict[str, Any]] = None
+    is_enabled: Optional[bool] = None
+
+
 class GuardrailProfileResponse(BaseModel):
     id: int
     tenant_id: Optional[int]
@@ -409,6 +419,44 @@ async def create_guardrail_profile(
         config=data.config
     )
     return profile
+
+
+@router.put("/profiles/{profile_id}", response_model=GuardrailProfileResponse)
+async def update_guardrail_profile(
+    profile_id: int,
+    data: GuardrailProfileUpdate,
+    tenant: Tenant = Depends(get_current_tenant),
+    db: Session = Depends(get_db),
+    _auth: dict = require_permission(Permission.GUARDRAILS_EDIT)
+):
+    profile = provider_config_service.update_guardrail_profile(
+        db,
+        profile_id=profile_id,
+        tenant_id=tenant.id,
+        name=data.name,
+        description=data.description,
+        request_processors=data.request_processors,
+        response_processors=data.response_processors,
+        logging_level=data.logging_level,
+        config=data.config,
+        is_enabled=data.is_enabled
+    )
+    if not profile:
+        raise HTTPException(status_code=404, detail="Guardrail profile not found")
+    return profile
+
+
+@router.delete("/profiles/{profile_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_guardrail_profile(
+    profile_id: int,
+    tenant: Tenant = Depends(get_current_tenant),
+    db: Session = Depends(get_db),
+    _auth: dict = require_permission(Permission.GUARDRAILS_EDIT)
+):
+    deleted = provider_config_service.delete_guardrail_profile(db, profile_id, tenant.id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Guardrail profile not found")
+    return None
 
 
 @router.get("/processors/definitions", response_model=List[ProcessorDefinitionResponse])
