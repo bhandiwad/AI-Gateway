@@ -240,8 +240,20 @@ ENABLE_CONTENT_ROUTING: bool = True
 ENABLE_STREAM_INSPECTION: bool = True
 ```
 
+### Custom Model Management Endpoints
+- `POST /api/v1/admin/models/custom` - Create custom model
+- `PUT /api/v1/admin/models/custom/{model_id}` - Update custom model
+- `DELETE /api/v1/admin/models/custom/{model_id}` - Delete custom model
+- `GET /api/v1/admin/models/settings` - List all models (built-in + custom)
+- `PUT /api/v1/admin/models/{model_id}/toggle` - Enable/disable model
+- `POST /api/v1/admin/models/reorder` - Reorder model display order
+
 ## Recent Changes
 
+- **Added Custom Model Management** - Tenants can add, edit, and delete custom AI models with full configuration (provider, pricing, context length, capabilities)
+- INR currency display across all pages (₹ symbol with 83.5 conversion rate)
+- Neutral enterprise UI palette (white/gray/slate) with no colorful gradients
+- Model Catalog now shows all 31 models with Add/Edit/Delete functionality
 - **Added 4 Enterprise Features** matching F5 AI Gateway capabilities
 - OpenTelemetry integration with OTLP export support
 - Semantic caching for 30-50% LLM cost reduction
