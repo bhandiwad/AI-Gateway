@@ -1,14 +1,44 @@
 from typing import Optional, List
 from sqlalchemy.orm import Session
 from datetime import datetime
+from fastapi import HTTPException
 
 from backend.app.db.models import Tenant, APIKey
+from backend.app.db.models.provider_config import EnhancedProviderConfig, GuardrailProfile
 from backend.app.core.security import get_password_hash, verify_password, generate_api_key, hash_api_key
 from backend.app.schemas.tenant import TenantCreate, TenantUpdate
 from backend.app.schemas.api_key import APIKeyCreate
 
 
 class TenancyService:
+    def _validate_resource_ownership(
+        self, 
+        db: Session, 
+        tenant_id: int, 
+        guardrail_profile_id: Optional[int] = None,
+        default_provider_id: Optional[int] = None
+    ) -> None:
+        """Validate that referenced resources belong to the same tenant or are global."""
+        if guardrail_profile_id:
+            profile = db.query(GuardrailProfile).filter(
+                GuardrailProfile.id == guardrail_profile_id
+            ).first()
+            if profile and profile.tenant_id is not None and profile.tenant_id != tenant_id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Cannot reference guardrail profile from another tenant"
+                )
+        
+        if default_provider_id:
+            provider = db.query(EnhancedProviderConfig).filter(
+                EnhancedProviderConfig.id == default_provider_id
+            ).first()
+            if provider and provider.tenant_id is not None and provider.tenant_id != tenant_id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Cannot reference provider from another tenant"
+                )
+    
     def get_tenant_by_email(self, db: Session, email: str) -> Optional[Tenant]:
         return db.query(Tenant).filter(Tenant.email == email).first()
     
@@ -46,6 +76,14 @@ class TenancyService:
             return None
         
         update_data = tenant_update.model_dump(exclude_unset=True)
+        
+        self._validate_resource_ownership(
+            db, 
+            tenant_id,
+            guardrail_profile_id=update_data.get('guardrail_profile_id'),
+            default_provider_id=update_data.get('default_provider_id')
+        )
+        
         for field, value in update_data.items():
             setattr(db_tenant, field, value)
         
@@ -81,6 +119,13 @@ class TenancyService:
         tenant_id: int, 
         api_key_data: APIKeyCreate
     ) -> tuple[APIKey, str]:
+        self._validate_resource_ownership(
+            db, 
+            tenant_id,
+            guardrail_profile_id=getattr(api_key_data, 'guardrail_profile_id', None),
+            default_provider_id=getattr(api_key_data, 'default_provider_id', None)
+        )
+        
         raw_key = generate_api_key()
         key_hash = hash_api_key(raw_key)
         
@@ -89,8 +134,14 @@ class TenancyService:
             name=api_key_data.name,
             key_hash=key_hash,
             key_prefix=raw_key[:12],
+            environment=getattr(api_key_data, 'environment', 'production'),
+            guardrail_profile_id=getattr(api_key_data, 'guardrail_profile_id', None),
+            default_provider_id=getattr(api_key_data, 'default_provider_id', None),
             rate_limit_override=api_key_data.rate_limit_override,
             allowed_models_override=api_key_data.allowed_models_override,
+            allowed_providers_override=getattr(api_key_data, 'allowed_providers_override', None),
+            cost_limit_daily=getattr(api_key_data, 'cost_limit_daily', None),
+            cost_limit_monthly=getattr(api_key_data, 'cost_limit_monthly', None),
             expires_at=api_key_data.expires_at
         )
         db.add(db_key)

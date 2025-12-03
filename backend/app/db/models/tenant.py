@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, JSON
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, JSON, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -22,6 +22,22 @@ class Tenant(Base):
     
     guardrail_policy = Column(String(50), default="default")
     
+    guardrail_profile_id = Column(Integer, ForeignKey("guardrail_profiles.id"), nullable=True)
+    default_provider_id = Column(Integer, ForeignKey("provider_configs_v2.id"), nullable=True)
+    
+    cost_ceiling_daily = Column(Float, nullable=True)
+    cost_ceiling_monthly = Column(Float, nullable=True)
+    
+    logging_policy = Column(JSON, default=lambda: {
+        "log_requests": True,
+        "log_responses": True,
+        "log_pii_detected": True,
+        "log_guardrail_triggers": True,
+        "retention_days": 90
+    })
+    
+    allowed_providers = Column(JSON, default=list)
+    
     allowed_models = Column(JSON, default=list)
     metadata_ = Column("metadata", JSON, default=dict)
     
@@ -32,3 +48,5 @@ class Tenant(Base):
     usage_logs = relationship("UsageLog", back_populates="tenant", cascade="all, delete-orphan")
     users = relationship("User", back_populates="tenant", cascade="all, delete-orphan")
     sso_config = relationship("SSOConfig", back_populates="tenant", uselist=False, cascade="all, delete-orphan")
+    guardrail_profile = relationship("GuardrailProfile", foreign_keys=[guardrail_profile_id])
+    default_provider = relationship("EnhancedProviderConfig", foreign_keys=[default_provider_id])
