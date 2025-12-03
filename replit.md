@@ -248,8 +248,14 @@ ENABLE_STREAM_INSPECTION: bool = True
 - `PUT /api/v1/admin/models/{model_id}/toggle` - Enable/disable model
 - `POST /api/v1/admin/models/reorder` - Reorder model display order
 
+### Router Configuration Endpoints
+- `GET /api/v1/admin/router/config` - Get current routing configuration
+- `PUT /api/v1/admin/router/config` - Update routing configuration
+- `GET /api/v1/admin/router/providers` - List available providers
+
 ## Recent Changes
 
+- **Added Router Settings UI** - Editable rate limit tiers, max retries, fallback order, and default provider configuration with drag-and-drop reordering
 - **Added Custom Model Management** - Tenants can add, edit, and delete custom AI models with full configuration (provider, pricing, context length, capabilities)
 - INR currency display across all pages (₹ symbol with 83.5 conversion rate)
 - Neutral enterprise UI palette (white/gray/slate) with no colorful gradients
