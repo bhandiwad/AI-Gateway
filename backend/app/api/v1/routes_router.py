@@ -23,6 +23,35 @@ class ModelSettingsUpdate(BaseModel):
 class ModelReorderRequest(BaseModel):
     model_order: List[str]
 
+
+class CustomModelCreate(BaseModel):
+    model_id: str
+    name: str
+    provider: str = "custom"
+    context_length: int = 128000
+    input_cost_per_1k: float = 0.0
+    output_cost_per_1k: float = 0.0
+    supports_streaming: bool = True
+    supports_functions: bool = False
+    supports_vision: bool = False
+    api_base_url: Optional[str] = None
+    api_key_name: Optional[str] = None
+    is_enabled: bool = True
+
+
+class CustomModelUpdate(BaseModel):
+    name: Optional[str] = None
+    provider: Optional[str] = None
+    context_length: Optional[int] = None
+    input_cost_per_1k: Optional[float] = None
+    output_cost_per_1k: Optional[float] = None
+    supports_streaming: Optional[bool] = None
+    supports_functions: Optional[bool] = None
+    supports_vision: Optional[bool] = None
+    api_base_url: Optional[str] = None
+    api_key_name: Optional[str] = None
+    is_enabled: Optional[bool] = None
+
 class ProviderStatus(BaseModel):
     name: str
     type: str
@@ -391,3 +420,70 @@ async def reorder_models(
     )
     
     return {"models": models, "message": "Models reordered successfully"}
+
+
+@router.post("/models/custom")
+async def create_custom_model(
+    model_data: CustomModelCreate,
+    current_user: dict = Depends(RequirePermission(Permission.ROUTER_EDIT)),
+    db: Session = Depends(get_db)
+):
+    """Create a custom model for this tenant"""
+    tenant_id = int(current_user["sub"])
+    try:
+        model = model_settings_service.create_custom_model(
+            db=db,
+            tenant_id=tenant_id,
+            model_data=model_data.model_dump()
+        )
+        return model
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.put("/models/custom/{model_id}")
+async def update_custom_model(
+    model_id: str,
+    model_data: CustomModelUpdate,
+    current_user: dict = Depends(RequirePermission(Permission.ROUTER_EDIT)),
+    db: Session = Depends(get_db)
+):
+    """Update a custom model for this tenant"""
+    tenant_id = int(current_user["sub"])
+    result = model_settings_service.update_custom_model(
+        db=db,
+        tenant_id=tenant_id,
+        model_id=model_id,
+        model_data=model_data.model_dump(exclude_unset=True)
+    )
+    
+    if not result:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Custom model '{model_id}' not found"
+        )
+    
+    return result
+
+
+@router.delete("/models/custom/{model_id}")
+async def delete_custom_model(
+    model_id: str,
+    current_user: dict = Depends(RequirePermission(Permission.ROUTER_EDIT)),
+    db: Session = Depends(get_db)
+):
+    """Delete a custom model for this tenant"""
+    tenant_id = int(current_user["sub"])
+    success = model_settings_service.delete_custom_model(
+        db=db,
+        tenant_id=tenant_id,
+        model_id=model_id
+    )
+    
+    if not success:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Custom model '{model_id}' not found"
+        )
+    
+    return {"message": f"Model '{model_id}' deleted successfully"}
