@@ -911,4 +911,217 @@ open http://localhost:5000
 
 ---
 
-*Document Version: 1.0 | Last Updated: December 2024*
+## F5-Style Configuration System (December 2024)
+
+This section documents the F5 AI Gateway-style configuration flow including provider setup wizard, API route management, and policy designer.
+
+### 1. Provider Configuration System
+
+Multi-step provider setup wizard with service-type-specific forms.
+
+**Database Model** (`backend/app/db/models/provider_config.py`):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | Integer (PK) | Primary key |
+| `tenant_id` | Integer (FK) | Tenant reference (nullable for global) |
+| `name` | String | Display name |
+| `service_type` | String | openai, azure, aws_bedrock, anthropic, gemini, custom |
+| `is_enabled` | Boolean | Active status |
+| `api_endpoint` | String | Base URL |
+| `api_version` | String | API version (e.g., 2024-02-15-preview) |
+| `region` | String | AWS/Azure region |
+| `auth_type` | String | api_key, oauth, iam |
+| `vault_secret_path` | String | HashiCorp Vault path for API key |
+| `rate_limit_rpm` | Integer | Requests per minute |
+| `rate_limit_tpm` | Integer | Tokens per minute |
+| `timeout_seconds` | Integer | Request timeout |
+| `max_retries` | Integer | Retry count |
+| `traffic_type` | String | enterprise, external |
+| `description` | Text | Provider description |
+| `tags` | JSON | Custom tags |
+
+**Frontend Component** (`ui/src/components/ProviderSetupModal.jsx`):
+- Step 1: Basic Info (name, service type, description)
+- Step 2: Connection (endpoint, region, auth, vault path)
+- Step 3: Limits (rate limits, timeout, retries)
+
+**API Endpoints**:
+```bash
+GET  /api/v1/admin/providers           # List all provider configs
+POST /api/v1/admin/providers           # Create provider config
+PUT  /api/v1/admin/providers/{id}      # Update provider config
+DELETE /api/v1/admin/providers/{id}    # Delete provider config
+```
+
+### 2. API Route Management
+
+Custom route creation with per-route policies and rate limits.
+
+**Database Model**:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | Integer (PK) | Primary key |
+| `tenant_id` | Integer (FK) | Tenant reference |
+| `name` | String | Route name |
+| `path_pattern` | String | e.g., /v1/chat/completions |
+| `allowed_methods` | JSON | ["POST", "GET"] |
+| `default_provider_id` | Integer (FK) | Default provider |
+| `default_model` | String | Default model |
+| `rate_limit_rpm` | Integer | Requests per minute |
+| `rate_limit_tpm` | Integer | Tokens per minute |
+| `guardrail_profile_id` | Integer (FK) | Associated guardrail profile |
+| `strip_prefix` | String | Prefix to remove |
+| `add_prefix` | String | Prefix to add |
+| `priority` | Integer | Route priority |
+| `is_enabled` | Boolean | Active status |
+
+**Frontend Component** (`ui/src/components/RouteSetupModal.jsx`):
+- Route path pattern and name
+- HTTP method selection (checkboxes)
+- Default provider and model
+- Rate limits (RPM/TPM)
+- Guardrail profile assignment
+
+**API Endpoints**:
+```bash
+GET  /api/v1/admin/providers/routes        # List API routes
+POST /api/v1/admin/providers/routes        # Create API route
+PUT  /api/v1/admin/providers/routes/{id}   # Update route
+DELETE /api/v1/admin/providers/routes/{id} # Delete route
+```
+
+### 3. Guardrail Profiles (Policy Designer)
+
+Reusable guardrail profile definitions with processor chains.
+
+**Database Model**:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | Integer (PK) | Primary key |
+| `tenant_id` | Integer (FK) | Tenant reference (nullable for global) |
+| `name` | String | Profile name |
+| `description` | Text | Profile description |
+| `is_enabled` | Boolean | Active status |
+| `request_processors` | JSON | Ordered list of request processors |
+| `response_processors` | JSON | Ordered list of response processors |
+
+**Processor Configuration**:
+```json
+{
+  "id": "pii_detector",
+  "name": "PII Detector",
+  "enabled": true,
+  "config": {
+    "patterns": ["ssn", "credit_card", "aadhaar", "pan"]
+  }
+}
+```
+
+**Built-in Processors**:
+
+| Processor | Description | Type |
+|-----------|-------------|------|
+| `pii_detector` | Detects SSN, credit cards, Aadhaar, PAN, bank accounts | Request/Response |
+| `toxicity_filter` | Filters toxic/harmful content | Request/Response |
+| `prompt_injection_guard` | Detects prompt injection attempts | Request |
+| `jailbreak_detector` | Detects jailbreak attempts | Request |
+| `financial_advice_guard` | Flags unauthorized financial advice | Response |
+| `cost_guard` | Enforces cost limits | Request |
+| `rate_limiter` | Per-request rate limiting | Request |
+| `content_filter` | Custom content filtering | Request/Response |
+
+**Frontend Component** (`ui/src/components/PolicyDesigner.jsx`):
+- Request processor chain with move up/down ordering
+- Response processor chain with move up/down ordering
+- Enable/disable toggles per processor
+
+**API Endpoints**:
+```bash
+GET  /api/v1/admin/providers/profiles        # List guardrail profiles
+POST /api/v1/admin/providers/profiles        # Create profile
+PUT  /api/v1/admin/providers/profiles/{id}   # Update profile
+DELETE /api/v1/admin/providers/profiles/{id} # Delete profile
+```
+
+### 4. Enhanced Tenant Management
+
+Extended tenant model with F5-style controls.
+
+**New Tenant Fields**:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `guardrail_profile_id` | Integer (FK) | Default guardrail profile |
+| `default_provider_id` | Integer (FK) | Default provider |
+| `cost_ceiling_daily` | Float | Daily spend limit |
+| `cost_ceiling_monthly` | Float | Monthly spend limit |
+| `logging_policy` | String | full, minimal, none |
+| `allowed_providers` | Text (JSON) | Allowed provider IDs |
+| `allowed_models` | Text (JSON) | Allowed model IDs |
+
+**Tenant Scoping Validation** (`tenancy_service.py`):
+- `_validate_resource_ownership()` - Ensures guardrail profiles and provider configs referenced by tenants belong to the same tenant or are globally shared
+- Prevents cross-tenant data exposure via resource references
+
+### 5. Enhanced API Key Management
+
+Extended API key model with environment tagging.
+
+**New API Key Fields**:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `environment` | String | dev, staging, production |
+| `guardrail_profile_id` | Integer (FK) | Per-key profile override |
+| `provider_id` | Integer (FK) | Per-key provider override |
+| `cost_limit` | Float | Per-key spend limit |
+
+### Router Configuration UI
+
+The Router Config page (`ui/src/pages/RouterConfig.jsx`) includes:
+
+1. **Settings Tab** - General router settings, rate limits, fallback order
+2. **Providers Tab** - Provider configuration management with Add/Edit/Delete
+3. **API Routes Tab** - Custom route management with per-route policies
+4. **Guardrail Profiles Tab** - Policy designer with processor ordering
+
+### Database Migrations Applied
+
+```sql
+-- Tenants table
+ALTER TABLE tenants ADD COLUMN guardrail_profile_id INTEGER;
+ALTER TABLE tenants ADD COLUMN default_provider_id INTEGER;
+ALTER TABLE tenants ADD COLUMN cost_ceiling_daily FLOAT;
+ALTER TABLE tenants ADD COLUMN cost_ceiling_monthly FLOAT;
+ALTER TABLE tenants ADD COLUMN logging_policy VARCHAR(50) DEFAULT 'full';
+ALTER TABLE tenants ADD COLUMN allowed_providers TEXT;
+ALTER TABLE tenants ADD COLUMN allowed_models TEXT;
+
+-- API Keys table
+ALTER TABLE api_keys ADD COLUMN environment VARCHAR(20) DEFAULT 'production';
+ALTER TABLE api_keys ADD COLUMN guardrail_profile_id INTEGER;
+ALTER TABLE api_keys ADD COLUMN provider_id INTEGER;
+ALTER TABLE api_keys ADD COLUMN cost_limit FLOAT;
+```
+
+### New Components Created
+
+| Component | Location | Description |
+|-----------|----------|-------------|
+| `ProviderSetupModal.jsx` | `ui/src/components/` | 3-step provider configuration wizard |
+| `RouteSetupModal.jsx` | `ui/src/components/` | API route configuration modal |
+| `PolicyDesigner.jsx` | `ui/src/components/` | Guardrail profile editor |
+
+### New Backend Services
+
+| Service | Location | Description |
+|---------|----------|-------------|
+| `provider_config_service.py` | `backend/app/services/` | Provider configuration CRUD |
+| `routes_providers.py` | `backend/app/api/v1/` | API endpoints for providers, routes, profiles |
+
+---
+
+*Document Version: 1.1 | Last Updated: December 2024*
