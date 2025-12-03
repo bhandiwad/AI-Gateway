@@ -162,7 +162,7 @@ export default function Settings() {
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">Account Limits</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 bg-gray-50 rounded-lg"><p className="text-sm text-gray-500">Rate Limit</p><p className="text-2xl font-bold text-gray-800">{user?.rate_limit}/min</p></div>
-                  <div className="p-4 bg-gray-50 rounded-lg"><p className="text-sm text-gray-500">Monthly Budget</p><p className="text-2xl font-bold text-gray-800">${user?.monthly_budget}</p></div>
+                  <div className="p-4 bg-gray-50 rounded-lg"><p className="text-sm text-gray-500">Monthly Budget</p><p className="text-2xl font-bold text-gray-800">₹{((user?.monthly_budget || 0) * 83.5).toLocaleString('en-IN')}</p></div>
                 </div>
               </div>
               <div className="flex justify-end"><button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><Save size={18} />{saved ? 'Saved!' : 'Save Changes'}</button></div>

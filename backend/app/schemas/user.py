@@ -41,15 +41,15 @@ class UserResponse(BaseModel):
     id: int
     tenant_id: int
     email: str
-    name: str
+    name: Optional[str] = None
     role: str
     status: str
-    allowed_models: List[str]
-    rate_limit: int
-    monthly_budget: int
-    current_spend: int
-    last_login_at: Optional[datetime]
-    created_at: datetime
+    allowed_models: Optional[List[str]] = []
+    rate_limit: Optional[int] = 60
+    monthly_budget: Optional[int] = 100
+    current_spend: Optional[int] = 0
+    last_login_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

@@ -64,7 +64,7 @@ export default function RouterConfig() {
       setProviders(providersRes.data.providers || []);
       setRoutingConfig(configRes.data);
       setFallbackChain(fallbackRes.data);
-      setModels(modelsRes.data.data || []);
+      setModels(modelsRes.data.models || modelsRes.data.data || modelsRes.data || []);
       setRoutingStats(statsRes.data.stats || []);
 
     } catch (err) {
@@ -136,8 +136,16 @@ export default function RouterConfig() {
       openai: '🤖',
       anthropic: '🧠',
       google: '🔮',
+      xai: '✖️',
+      meta: '📘',
+      mistral: '🌊',
+      cohere: '🔷',
+      azure: '☁️',
+      'azure-openai': '☁️',
+      'aws-bedrock': '🟠',
       mock: '🎭',
       local: '💻',
+      'local-vllm': '💻',
     };
     return icons[provider.toLowerCase()] || '🔌';
   };
@@ -202,30 +210,30 @@ export default function RouterConfig() {
 
         {activeTab === 'providers' && (
           <div className="space-y-4">
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg p-6 text-white mb-6">
+            <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6 shadow-sm">
               <div className="flex items-center gap-3 mb-2">
-                <GitBranch size={28} />
-                <h2 className="text-xl font-bold">Multi-Provider Gateway</h2>
+                <GitBranch size={28} className="text-gray-700" />
+                <h2 className="text-xl font-bold text-gray-900">Multi-Provider Gateway</h2>
               </div>
-              <p className="text-indigo-100">
+              <p className="text-gray-600">
                 Route requests across multiple AI providers with automatic fallback and load balancing.
               </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                <div className="bg-white/10 rounded-lg p-3">
-                  <p className="text-2xl font-bold">{providers.length}</p>
-                  <p className="text-sm text-indigo-100">Providers</p>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <p className="text-2xl font-bold text-gray-900">{providers.length}</p>
+                  <p className="text-sm text-gray-500">Providers</p>
                 </div>
-                <div className="bg-white/10 rounded-lg p-3">
-                  <p className="text-2xl font-bold">{models.length}</p>
-                  <p className="text-sm text-indigo-100">Models</p>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <p className="text-2xl font-bold text-gray-900">{models.length}</p>
+                  <p className="text-sm text-gray-500">Models</p>
                 </div>
-                <div className="bg-white/10 rounded-lg p-3">
-                  <p className="text-2xl font-bold">{providers.filter(p => p.status === 'active').length}</p>
-                  <p className="text-sm text-indigo-100">Active</p>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <p className="text-2xl font-bold text-green-600">{providers.filter(p => p.status === 'active').length}</p>
+                  <p className="text-sm text-gray-500">Active</p>
                 </div>
-                <div className="bg-white/10 rounded-lg p-3">
-                  <p className="text-2xl font-bold">{(routingConfig?.strategies || []).filter(r => r.enabled).length}</p>
-                  <p className="text-sm text-indigo-100">Strategies Active</p>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <p className="text-2xl font-bold text-gray-900">{(routingConfig?.strategies || []).filter(r => r.enabled).length}</p>
+                  <p className="text-sm text-gray-500">Strategies Active</p>
                 </div>
               </div>
             </div>
@@ -276,24 +284,39 @@ export default function RouterConfig() {
         {activeTab === 'routing' && (
           <div className="space-y-4">
             {routingConfig && (
-              <div className="bg-gradient-to-r from-green-600 to-teal-600 rounded-lg p-6 text-white mb-4">
-                <h3 className="font-semibold mb-3">Current Configuration</h3>
+              <div className="bg-white border border-gray-200 rounded-lg p-6 mb-4 shadow-sm">
+                <h3 className="font-semibold mb-3 text-gray-900">Current Configuration</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-white/10 rounded-lg p-3">
-                    <p className="text-sm text-green-100">Default Provider</p>
-                    <p className="font-bold capitalize">{routingConfig.default_provider}</p>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <p className="text-sm text-gray-500">Default Provider</p>
+                    <p className="font-bold capitalize text-gray-900">{routingConfig.default_provider}</p>
                   </div>
-                  <div className="bg-white/10 rounded-lg p-3">
-                    <p className="text-sm text-green-100">Default Model</p>
-                    <p className="font-bold">{routingConfig.default_model}</p>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <p className="text-sm text-gray-500">Default Model</p>
+                    <p className="font-bold text-gray-900">{routingConfig.default_model}</p>
                   </div>
-                  <div className="bg-white/10 rounded-lg p-3">
-                    <p className="text-sm text-green-100">Fallback</p>
-                    <p className="font-bold">{routingConfig.fallback?.enabled ? 'Enabled' : 'Disabled'}</p>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <p className="text-sm text-gray-500">Fallback</p>
+                    <p className="font-bold text-gray-900">{routingConfig.fallback?.enabled ? 'Enabled' : 'Disabled'}</p>
                   </div>
-                  <div className="bg-white/10 rounded-lg p-3">
-                    <p className="text-sm text-green-100">Max Retries</p>
-                    <p className="font-bold">{routingConfig.fallback?.max_retries || 2}</p>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <p className="text-sm text-gray-500">Max Retries</p>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="1"
+                        max="5"
+                        value={routingConfig.fallback?.max_retries || 2}
+                        onChange={(e) => setRoutingConfig(prev => ({
+                          ...prev,
+                          fallback: {
+                            ...prev.fallback,
+                            max_retries: parseInt(e.target.value) || 2
+                          }
+                        }))}
+                        className="w-16 px-2 py-1 border border-gray-300 rounded text-center font-bold text-gray-900"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

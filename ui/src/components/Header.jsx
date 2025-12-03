@@ -27,7 +27,7 @@ export default function Header({ title }) {
           <div className="hidden sm:flex items-center gap-2 text-sm">
             <span className="text-gray-500">Budget:</span>
             <span className="font-medium">
-              ${user.current_spend?.toFixed(2)} / ${user.monthly_budget?.toFixed(2)}
+              ₹{((user.current_spend || 0) * 83.5).toLocaleString('en-IN', {maximumFractionDigits: 0})} / ₹{((user.monthly_budget || 0) * 83.5).toLocaleString('en-IN', {maximumFractionDigits: 0})}
             </span>
           </div>
         )}

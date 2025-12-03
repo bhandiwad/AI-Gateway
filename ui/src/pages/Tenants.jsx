@@ -176,12 +176,12 @@ export default function Tenants() {
                             className="w-24 px-2 py-1 border border-gray-300 rounded"
                           />
                         ) : (
-                          <span className="text-gray-800">${tenant.monthly_budget}</span>
+                          <span className="text-gray-800">₹{((tenant.monthly_budget || 0) * 83.5).toLocaleString('en-IN')}</span>
                         )}
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-gray-800">
-                          ${tenant.current_spend?.toFixed(2) || '0.00'}
+                          ₹{((tenant.current_spend || 0) * 83.5).toLocaleString('en-IN', {maximumFractionDigits: 0})}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">
