@@ -9,7 +9,7 @@ import time
 from backend.app.core.config import settings
 from backend.app.core.rate_limit import rate_limiter
 from backend.app.db.session import engine, Base
-from backend.app.api.v1 import routes_chat, routes_admin, routes_users, routes_audit, routes_billing, routes_guardrails, routes_router, routes_providers
+from backend.app.api.v1 import routes_chat, routes_admin, routes_users, routes_audit, routes_billing, routes_guardrails, routes_router, routes_providers, routes_organization, routes_external_guardrails, routes_load_balancer, routes_alerts
 from backend.app.utils.metrics import get_metrics, ACTIVE_REQUESTS
 
 from backend.app.db.models.tenant import Tenant
@@ -187,6 +187,30 @@ app.include_router(
     tags=["Provider Configuration"]
 )
 
+app.include_router(
+    routes_organization.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/organization",
+    tags=["Organization Management"]
+)
+
+app.include_router(
+    routes_external_guardrails.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/guardrails/external",
+    tags=["External Guardrail Providers"]
+)
+
+app.include_router(
+    routes_load_balancer.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/router",
+    tags=["Load Balancer & Circuit Breaker"]
+)
+
+app.include_router(
+    routes_alerts.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/alerts",
+    tags=["Alerts & Notifications"]
+)
+
 
 @app.get("/")
 async def root():
@@ -199,7 +223,10 @@ async def root():
             "telemetry": settings.ENABLE_TELEMETRY,
             "semantic_cache": settings.ENABLE_SEMANTIC_CACHE,
             "content_routing": settings.ENABLE_CONTENT_ROUTING,
-            "stream_inspection": settings.ENABLE_STREAM_INSPECTION
+            "stream_inspection": settings.ENABLE_STREAM_INSPECTION,
+            "load_balancing": True,
+            "circuit_breaker": True,
+            "request_transformation": True
         }
     }
 
@@ -248,5 +275,20 @@ async def feature_status():
     if settings.ENABLE_STREAM_INSPECTION:
         from backend.app.services.stream_inspection_service import stream_inspection_service
         features["stream_inspection"]["stats"] = stream_inspection_service.get_stats()
+    
+    # Add load balancer and circuit breaker stats
+    from backend.app.services.load_balancer import load_balancer
+    from backend.app.services.circuit_breaker import circuit_breaker_manager
+    
+    features["load_balancing"] = {
+        "enabled": True,
+        "stats": load_balancer.get_all_stats()
+    }
+    
+    features["circuit_breaker"] = {
+        "enabled": True,
+        "unhealthy_providers": circuit_breaker_manager.get_unhealthy_providers(),
+        "breaker_count": len(circuit_breaker_manager.get_all_metrics())
+    }
     
     return features

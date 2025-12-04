@@ -11,19 +11,27 @@ import {
   FileText,
   DollarSign,
   Shield,
+  ShieldCheck,
   GitBranch,
-  Building2
+  Building2,
+  Activity
 } from 'lucide-react';
 import { useAuth, PERMISSIONS } from '../contexts/AuthContext';
 
+import { Bell } from 'lucide-react';
+
 const navItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard, permission: PERMISSIONS.DASHBOARD_VIEW },
+  { path: '/health', label: 'Health & Reliability', icon: Activity, permission: PERMISSIONS.ROUTER_VIEW },
+  { path: '/alerts', label: 'Alerts', icon: Bell, permission: PERMISSIONS.SETTINGS_VIEW },
   { path: '/router', label: 'Router', icon: GitBranch, permission: PERMISSIONS.ROUTER_VIEW },
   { path: '/models', label: 'Models', icon: Layers, permission: PERMISSIONS.DASHBOARD_VIEW },
   { path: '/playground', label: 'Playground', icon: MessageSquare, permission: PERMISSIONS.GATEWAY_USE },
   { path: '/guardrails', label: 'Guardrails', icon: Shield, permission: PERMISSIONS.GUARDRAILS_VIEW },
+  { path: '/external-guardrails', label: 'External Guardrails', icon: ShieldCheck, permission: PERMISSIONS.GUARDRAILS_VIEW },
   { path: '/api-keys', label: 'API Keys', icon: Key, permission: PERMISSIONS.API_KEYS_VIEW },
   { path: '/users', label: 'Users', icon: Users, permission: PERMISSIONS.USERS_VIEW },
+  { path: '/organization', label: 'Organization', icon: Building2, permission: PERMISSIONS.USERS_VIEW },
   { path: '/billing', label: 'Billing', icon: DollarSign, permission: PERMISSIONS.BILLING_VIEW },
   { path: '/audit-logs', label: 'Audit Logs', icon: FileText, permission: PERMISSIONS.AUDIT_VIEW },
   { path: '/tenants', label: 'Tenants', icon: Building2, adminOnly: true },

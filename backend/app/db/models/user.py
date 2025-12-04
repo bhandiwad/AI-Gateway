@@ -25,6 +25,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
+    department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
     
     email = Column(String(255), nullable=False, index=True)
     name = Column(String(255), nullable=False)
@@ -48,6 +49,8 @@ class User(Base):
     metadata_ = Column("metadata", JSON, default=dict)
     
     tenant = relationship("Tenant", back_populates="users")
+    department = relationship("Department", foreign_keys=[department_id])
+    teams = relationship("Team", secondary="team_members", back_populates="members")
     usage_logs = relationship("UsageLog", back_populates="user", foreign_keys="UsageLog.user_id")
     audit_logs = relationship("AuditLog", back_populates="user")
 

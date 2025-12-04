@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from datetime import datetime, timedelta
 
-from backend.app.db.models import UsageLog, Tenant
+from backend.app.db.models import UsageLog, Tenant, APIKey
 
 
 class UsageService:
@@ -25,11 +25,28 @@ class UsageService:
         guardrail_triggered: Optional[str] = None,
         guardrail_action: Optional[str] = None,
         request_metadata: Optional[Dict] = None,
-        response_metadata: Optional[Dict] = None
+        response_metadata: Optional[Dict] = None,
+        user_id: Optional[int] = None,
+        department_id: Optional[int] = None,
+        team_id: Optional[int] = None
     ) -> UsageLog:
+        # If department/team not provided, try to derive from API key
+        if api_key_id and (department_id is None or team_id is None):
+            api_key = db.query(APIKey).filter(APIKey.id == api_key_id).first()
+            if api_key:
+                if department_id is None:
+                    department_id = api_key.department_id
+                if team_id is None:
+                    team_id = api_key.team_id
+                if user_id is None:
+                    user_id = api_key.owner_user_id
+        
         usage_log = UsageLog(
             tenant_id=tenant_id,
             api_key_id=api_key_id,
+            user_id=user_id,
+            department_id=department_id,
+            team_id=team_id,
             request_id=request_id,
             endpoint=endpoint,
             model=model,

@@ -10,6 +10,9 @@ class APIKey(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
+    department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
+    owner_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     
     name = Column(String(255), nullable=False)
     key_hash = Column(String(255), unique=True, nullable=False, index=True)
@@ -29,6 +32,7 @@ class APIKey(Base):
     cost_limit_daily = Column(Float, nullable=True)
     cost_limit_monthly = Column(Float, nullable=True)
     
+    tags = Column(JSON, default=list)
     metadata_ = Column("metadata", JSON, default=dict)
     
     last_used_at = Column(DateTime, nullable=True)
@@ -36,5 +40,8 @@ class APIKey(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     
     tenant = relationship("Tenant", back_populates="api_keys")
+    department = relationship("Department", back_populates="api_keys")
+    team = relationship("Team", back_populates="api_keys")
+    owner = relationship("User", foreign_keys=[owner_user_id])
     guardrail_profile = relationship("GuardrailProfile", foreign_keys=[guardrail_profile_id])
     default_provider = relationship("EnhancedProviderConfig", foreign_keys=[default_provider_id])

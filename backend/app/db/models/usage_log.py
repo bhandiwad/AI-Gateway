@@ -12,6 +12,8 @@ class UsageLog(Base):
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
     api_key_id = Column(Integer, ForeignKey("api_keys.id"), nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    department_id = Column(Integer, ForeignKey("departments.id"), nullable=True, index=True)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True, index=True)
     
     request_id = Column(String(64), unique=True, nullable=False, index=True)
     
@@ -39,3 +41,5 @@ class UsageLog(Base):
     
     tenant = relationship("Tenant", back_populates="usage_logs")
     user = relationship("User", back_populates="usage_logs", foreign_keys=[user_id])
+    department = relationship("Department", foreign_keys=[department_id])
+    team = relationship("Team", foreign_keys=[team_id])

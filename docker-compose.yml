@@ -13,12 +13,16 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - SESSION_SECRET=${SESSION_SECRET}
+      - POSTGRES_PASSWORD=postgres
     depends_on:
-      - redis
-      - postgres
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     volumes:
       - ./backend:/app/backend
       - ./configs:/app/configs
+    restart: unless-stopped
 
   frontend:
     build:
@@ -46,6 +50,12 @@ services:
       - POSTGRES_DB=ai_gateway
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
 volumes:
   redis_data:

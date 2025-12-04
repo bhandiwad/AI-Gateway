@@ -15,6 +15,10 @@ import Billing from './pages/Billing';
 import Guardrails from './pages/Guardrails';
 import RouterConfig from './pages/RouterConfig';
 import Users from './pages/Users';
+import Organization from './pages/Organization';
+import ExternalGuardrails from './pages/ExternalGuardrails';
+import HealthDashboard from './pages/HealthDashboard';
+import Alerts from './pages/Alerts';
 import { Menu, X } from 'lucide-react';
 
 const MobileMenuContext = createContext();
@@ -170,6 +174,38 @@ function AppRoutes() {
         <PrivateRoute>
           <AppLayout>
             <Users />
+          </AppLayout>
+        </PrivateRoute>
+      } />
+      
+      <Route path="/organization" element={
+        <PrivateRoute>
+          <AppLayout>
+            <Organization />
+          </AppLayout>
+        </PrivateRoute>
+      } />
+      
+      <Route path="/external-guardrails" element={
+        <PrivateRoute>
+          <AppLayout>
+            <ExternalGuardrails />
+          </AppLayout>
+        </PrivateRoute>
+      } />
+      
+      <Route path="/health" element={
+        <PrivateRoute>
+          <AppLayout>
+            <HealthDashboard />
+          </AppLayout>
+        </PrivateRoute>
+      } />
+      
+      <Route path="/alerts" element={
+        <PrivateRoute>
+          <AppLayout>
+            <Alerts />
           </AppLayout>
         </PrivateRoute>
       } />

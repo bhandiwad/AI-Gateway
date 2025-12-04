@@ -8,6 +8,9 @@ import structlog
 import asyncio
 
 from backend.app.core.config import settings
+from backend.app.services.load_balancer import load_balancer, LoadBalancingStrategy
+from backend.app.services.circuit_breaker import circuit_breaker_manager, CircuitBreakerOpenError, CircuitBreakerConfig
+from backend.app.services.request_transformer import request_transformer, response_transformer
 
 logger = structlog.get_logger()
 
@@ -45,6 +48,29 @@ class RouterService:
         self.fallback_order = ["openai", "anthropic"]
         litellm.drop_params = True
         litellm.set_verbose = False
+        self._initialize_load_balancing()
+        self._initialize_circuit_breakers()
+    
+    def _initialize_load_balancing(self):
+        """Initialize load balancer with provider pools"""
+        # Register provider pools for models with multiple endpoints
+        # Example: Multiple OpenAI endpoints for load balancing
+        load_balancer.register_provider_pool(
+            "gpt-4",
+            [{"name": "openai", "weight": 1}],
+            LoadBalancingStrategy.WEIGHTED_ROUND_ROBIN
+        )
+    
+    def _initialize_circuit_breakers(self):
+        """Initialize circuit breakers with default config"""
+        # Circuit breakers are created on-demand, but we can set default config
+        default_config = CircuitBreakerConfig(
+            failure_threshold=5,
+            success_threshold=2,
+            timeout_seconds=30,
+            window_seconds=60
+        )
+        circuit_breaker_manager.set_default_config(default_config)
     
     def get_provider_for_model(self, model: str) -> str:
         model_lower = model.lower()
@@ -107,12 +133,125 @@ class RouterService:
         temperature: float = 1.0,
         max_tokens: Optional[int] = None,
         stream: bool = False,
+        tenant_id: Optional[int] = None,
+        api_key_id: Optional[int] = None,
+        user_id: Optional[int] = None,
+        route_path: str = "/chat/completions",
         **kwargs
     ) -> Dict[str, Any]:
         request_id = str(uuid.uuid4())
         start_time = time.time()
-        provider = self.get_provider_for_model(model)
         
+        # Apply request transformations
+        request_data = {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            **kwargs
+        }
+        context = {
+            "tenant_id": tenant_id,
+            "api_key_id": api_key_id,
+            "user_id": user_id
+        }
+        request_data = request_transformer.transform_request(route_path, request_data, context)
+        
+        # Extract transformed values
+        model = request_data.get("model", model)
+        messages = request_data.get("messages", messages)
+        temperature = request_data.get("temperature", temperature)
+        max_tokens = request_data.get("max_tokens", max_tokens)
+        
+        # Select provider with load balancing
+        provider = self._select_provider_with_load_balancing(model)
+        
+        # Try with circuit breaker protection
+        tried_providers = []
+        last_error = None
+        
+        for attempt_provider in [provider] + self.fallback_order:
+            if attempt_provider in tried_providers:
+                continue
+            tried_providers.append(attempt_provider)
+            
+            try:
+                # Check circuit breaker
+                breaker = circuit_breaker_manager.get_breaker(attempt_provider)
+                if not breaker.can_execute():
+                    logger.warning(
+                        "circuit_breaker_open",
+                        provider=attempt_provider,
+                        state=breaker.state
+                    )
+                    continue
+                
+                # Mark load balancer request start
+                load_balancer.mark_request_start(model, attempt_provider)
+                
+                result = await self._execute_completion(
+                    model=model,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    stream=stream,
+                    provider=attempt_provider,
+                    request_id=request_id,
+                    start_time=start_time,
+                    **kwargs
+                )
+                
+                # Record success
+                latency_ms = result.get("latency_ms", 0)
+                breaker.record_success(latency_ms)
+                load_balancer.mark_request_end(model, attempt_provider, latency_ms, True)
+                
+                # Apply response transformations
+                if not stream and "response" in result:
+                    result["response"] = response_transformer.transform_response(
+                        route_path,
+                        result["response"],
+                        context
+                    )
+                
+                return result
+                
+            except CircuitBreakerOpenError as e:
+                logger.warning("circuit_breaker_rejection", provider=attempt_provider)
+                last_error = e
+                continue
+            except Exception as e:
+                # Record failure
+                breaker.record_failure(e)
+                latency_ms = int((time.time() - start_time) * 1000)
+                load_balancer.mark_request_end(model, attempt_provider, latency_ms, False)
+                
+                logger.error(
+                    "provider_failure",
+                    provider=attempt_provider,
+                    error=str(e),
+                    model=model
+                )
+                last_error = e
+                continue
+        
+        # All providers failed
+        logger.error("all_providers_failed", model=model, tried_providers=tried_providers)
+        raise last_error or Exception("All providers failed")
+    
+    async def _execute_completion(
+        self,
+        model: str,
+        messages: List[Dict[str, Any]],
+        temperature: float,
+        max_tokens: Optional[int],
+        stream: bool,
+        provider: str,
+        request_id: str,
+        start_time: float,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """Execute the actual completion request"""
         try:
             if provider == "mock":
                 await asyncio.sleep(0.1)
@@ -181,8 +320,19 @@ class RouterService:
             }
             
         except Exception as e:
-            logger.error("chat_completion_error", model=model, error=str(e))
+            logger.error("execute_completion_error", model=model, provider=provider, error=str(e))
             raise
+    
+    def _select_provider_with_load_balancing(self, model: str) -> str:
+        """Select provider using load balancer if configured, otherwise use default logic"""
+        # Try load balancer first
+        selected = load_balancer.select_provider(model)
+        if selected:
+            logger.debug("load_balancer_selected", model=model, provider=selected)
+            return selected
+        
+        # Fallback to original logic
+        return self.get_provider_for_model(model)
     
     async def stream_chat_completion(
         self,

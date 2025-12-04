@@ -13,11 +13,18 @@ export default function ApiKeys() {
   const [creating, setCreating] = useState(false);
   const [profiles, setProfiles] = useState([]);
   const [providers, setProviders] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [teams, setTeams] = useState([]);
+  const [users, setUsers] = useState([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
     environment: 'production',
+    department_id: null,
+    team_id: null,
+    owner_user_id: null,
+    tags: '',
     guardrail_profile_id: null,
     default_provider_id: null,
     rate_limit_override: null,
@@ -29,6 +36,9 @@ export default function ApiKeys() {
     loadApiKeys();
     loadProfiles();
     loadProviders();
+    loadDepartments();
+    loadTeams();
+    loadUsers();
   }, []);
 
   const loadApiKeys = async () => {
@@ -66,6 +76,42 @@ export default function ApiKeys() {
     }
   };
 
+  const loadDepartments = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await api.get('/admin/organization/departments', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setDepartments(response.data || []);
+    } catch (error) {
+      console.error('Failed to load departments:', error);
+    }
+  };
+
+  const loadTeams = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await api.get('/admin/organization/teams', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setTeams(response.data || []);
+    } catch (error) {
+      console.error('Failed to load teams:', error);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await api.get('/admin/users', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUsers(response.data || []);
+    } catch (error) {
+      console.error('Failed to load users:', error);
+    }
+  };
+
   const handleCreate = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) return;
@@ -75,6 +121,10 @@ export default function ApiKeys() {
       const payload = {
         name: formData.name,
         environment: formData.environment,
+        department_id: formData.department_id || undefined,
+        team_id: formData.team_id || undefined,
+        owner_user_id: formData.owner_user_id || undefined,
+        tags: formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(t => t) : undefined,
         guardrail_profile_id: formData.guardrail_profile_id || undefined,
         default_provider_id: formData.default_provider_id || undefined,
         rate_limit_override: formData.rate_limit_override || undefined,
@@ -87,6 +137,10 @@ export default function ApiKeys() {
       setFormData({
         name: '',
         environment: 'production',
+        department_id: null,
+        team_id: null,
+        owner_user_id: null,
+        tags: '',
         guardrail_profile_id: null,
         default_provider_id: null,
         rate_limit_override: null,
@@ -181,13 +235,14 @@ export default function ApiKeys() {
                 <form onSubmit={handleCreate} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Key Name *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
                       <input
                         type="text"
+                        required
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="e.g., Production API"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+                        placeholder="e.g., Production Key"
                       />
                     </div>
                     <div>
@@ -202,6 +257,60 @@ export default function ApiKeys() {
                         <option value="development">Development</option>
                       </select>
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                      <select
+                        value={formData.department_id || ''}
+                        onChange={(e) => setFormData({ ...formData, department_id: e.target.value ? parseInt(e.target.value) : null })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+                      >
+                        <option value="">Select department</option>
+                        {departments.map(d => (
+                          <option key={d.id} value={d.id}>{d.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Team</label>
+                      <select
+                        value={formData.team_id || ''}
+                        onChange={(e) => setFormData({ ...formData, team_id: e.target.value ? parseInt(e.target.value) : null })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+                      >
+                        <option value="">Select team</option>
+                        {teams.filter(t => !formData.department_id || t.department_id === formData.department_id).map(t => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Owner</label>
+                      <select
+                        value={formData.owner_user_id || ''}
+                        onChange={(e) => setFormData({ ...formData, owner_user_id: e.target.value ? parseInt(e.target.value) : null })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+                      >
+                        <option value="">Select owner</option>
+                        {users.map(u => (
+                          <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+                    <input
+                      type="text"
+                      value={formData.tags}
+                      onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                      placeholder="e.g., production, backend, api"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">Comma-separated tags for organization</p>
                   </div>
 
                   <button
