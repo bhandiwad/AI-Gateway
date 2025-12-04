@@ -13,7 +13,8 @@ The AI Gateway is an enterprise-grade, full-stack application providing a unifie
 - NVIDIA NeMo Guardrails for advanced safety
 - Mobile-first responsive design
 - INR currency display (₹ symbol with 83.5 conversion rate)
-- Neutral enterprise UI palette (white/gray/slate)
+- **InfinitAI branding** with green/lime color theme (lime-500, lime-600, green-500)
+- White sidebar with green accent colors for navigation
 
 ## System Architecture
 
@@ -38,8 +39,14 @@ The AI Gateway comprises a Python/FastAPI backend and a React/Vite frontend, com
 - **Location**: `ui/`
 - **Framework**: React 18 with Vite and Tailwind CSS
 - **Port**: 5000
-- **Key Pages**: Dashboard, Models, Playground, API Keys, Users, Billing, Audit Logs, Guardrails, and a comprehensive Router Config for providers, routes, and guardrail profiles.
-- **UI/UX Decisions**: Mobile-first responsive design, neutral enterprise color palette.
+- **Key Pages**: Dashboard (merged with Health & Reliability as tabs), Models, Playground, API Keys, Users, Organization, Alerts, Billing, Audit Logs, Guardrails, External Guardrails, Router Config.
+- **Branding**: InfinitAI with custom infinity-style logo in green/lime colors
+- **UI/UX Decisions**: 
+  - Mobile-first responsive design
+  - White sidebar with green/lime accent colors
+  - Dashboard with tabs for Overview and Health & Reliability
+  - Navigation order: Dashboard, Router, Models, Playground, Guardrails, External Guardrails, API Keys, Users, Organization, Alerts, Billing, Audit Logs, Tenants (admin only), Settings
+- **Shared Components**: `InfinitAILogo` component in `ui/src/components/InfinitAILogo.jsx`
 
 ### Database Schema
 PostgreSQL is used for data persistence with tables for `tenants`, `api_keys`, `usage_logs`, `users`, `audit_logs`, `policies`, `provider_configs`, `guardrail_profiles`, `api_routes`, and `sso_configs`.

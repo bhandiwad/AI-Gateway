@@ -2,6 +2,7 @@ import { useState, createContext, useContext } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Sidebar from './components/Sidebar';
+import InfinitAILogo from './components/InfinitAILogo';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -17,7 +18,6 @@ import RouterConfig from './pages/RouterConfig';
 import Users from './pages/Users';
 import Organization from './pages/Organization';
 import ExternalGuardrails from './pages/ExternalGuardrails';
-import HealthDashboard from './pages/HealthDashboard';
 import Alerts from './pages/Alerts';
 import { Menu, X } from 'lucide-react';
 
@@ -32,8 +32,11 @@ function PrivateRoute({ children }) {
   
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-4">
+          <InfinitAILogo className="w-16 h-16 animate-pulse" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-lime-600"></div>
+        </div>
       </div>
     );
   }
@@ -47,13 +50,17 @@ function AppLayout({ children }) {
   return (
     <MobileMenuContext.Provider value={{ mobileMenuOpen, setMobileMenuOpen }}>
       <div className="flex flex-col md:flex-row h-screen bg-gray-100">
-        <div className="md:hidden bg-gray-900 text-white px-4 py-3 flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold">AI Gateway</h1>
+        <div className="md:hidden bg-white text-gray-800 px-4 py-3 flex items-center justify-between border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <InfinitAILogo className="w-8 h-8" />
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">InfinitAI</h1>
+              <p className="text-xs text-gray-500">AI Gateway</p>
+            </div>
           </div>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded-lg hover:bg-gray-800 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-600"
             aria-label="Toggle menu"
           >
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -194,14 +201,6 @@ function AppRoutes() {
         </PrivateRoute>
       } />
       
-      <Route path="/health" element={
-        <PrivateRoute>
-          <AppLayout>
-            <HealthDashboard />
-          </AppLayout>
-        </PrivateRoute>
-      } />
-      
       <Route path="/alerts" element={
         <PrivateRoute>
           <AppLayout>
@@ -209,6 +208,9 @@ function AppRoutes() {
           </AppLayout>
         </PrivateRoute>
       } />
+
+      {/* Redirect old /health route to dashboard */}
+      <Route path="/health" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

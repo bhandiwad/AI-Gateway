@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, Plus, Edit2, Trash2, Mail, MessageSquare, Webhook, Activity, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import Header from '../components/Header';
 
 const Alerts = () => {
   const [alertConfigs, setAlertConfigs] = useState([]);
@@ -97,150 +98,159 @@ const Alerts = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Bell className="w-7 h-7 text-blue-600" />
-            Alert Configuration
-          </h1>
-          <p className="text-gray-600 mt-1">Configure notifications for important events</p>
-        </div>
-        <button
-          onClick={() => {
-            setEditingConfig(null);
-            setShowModal(true);
-          }}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          New Alert
-        </button>
-      </div>
+    <div className="flex-1 flex flex-col min-h-0">
+      <Header title="Alerts" />
+      
+      <div className="flex-1 overflow-auto p-4 sm:p-6 bg-gray-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <div className="p-2 bg-lime-100 rounded-lg">
+                  <Bell className="w-6 h-6 text-lime-700" />
+                </div>
+                Alert Configuration
+              </h1>
+              <p className="text-gray-600 mt-1 text-sm">Configure notifications for important events</p>
+            </div>
+            <button
+              onClick={() => {
+                setEditingConfig(null);
+                setShowModal(true);
+              }}
+              className="px-4 py-2.5 bg-lime-600 text-white rounded-xl hover:bg-lime-700 flex items-center gap-2 text-sm font-medium transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              New Alert
+            </button>
+          </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>
-      ) : alertConfigs.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-12 text-center">
-          <Bell className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Alert Configurations</h3>
-          <p className="text-gray-600 mb-4">Get notified when important events occur in your gateway.</p>
-          <button
-            onClick={() => setShowModal(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Create Your First Alert
-          </button>
-        </div>
-      ) : (
-        <div className="grid gap-4">
-          {alertConfigs.map((config) => {
-            const alertType = alertTypes.find(t => t.value === config.alert_type);
-            const Icon = alertType?.icon || Bell;
+          {loading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-lime-600"></div>
+            </div>
+          ) : alertConfigs.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Bell className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Alert Configurations</h3>
+              <p className="text-gray-600 mb-6">Get notified when important events occur in your gateway.</p>
+              <button
+                onClick={() => setShowModal(true)}
+                className="px-4 py-2.5 bg-lime-600 text-white rounded-xl hover:bg-lime-700 font-medium transition-colors"
+              >
+                Create Your First Alert
+              </button>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {alertConfigs.map((config) => {
+                const alertType = alertTypes.find(t => t.value === config.alert_type);
+                const Icon = alertType?.icon || Bell;
 
-            return (
-              <div key={config.id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow">
-                <div className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <Icon className="w-5 h-5 text-gray-600" />
-                        <h3 className="text-lg font-semibold text-gray-900">{config.name}</h3>
-                        <span className={`px-2 py-1 text-xs rounded-full ${severityColors[config.severity]}`}>
-                          {config.severity.toUpperCase()}
-                        </span>
-                        <label className="flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={config.is_active}
-                            onChange={() => toggleActive(config)}
-                            className="sr-only peer"
-                          />
-                          <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                      </div>
-                      
-                      {config.description && (
-                        <p className="text-sm text-gray-600 mb-3">{config.description}</p>
-                      )}
+                return (
+                  <div key={config.id} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                    <div className="p-4 sm:p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-3 mb-2">
+                            <div className="p-1.5 bg-gray-100 rounded-lg">
+                              <Icon className="w-5 h-5 text-gray-600" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-gray-900">{config.name}</h3>
+                            <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${severityColors[config.severity]}`}>
+                              {config.severity.toUpperCase()}
+                            </span>
+                            <label className="flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={config.is_active}
+                                onChange={() => toggleActive(config)}
+                                className="sr-only peer"
+                              />
+                              <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-lime-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-lime-600"></div>
+                            </label>
+                          </div>
+                          
+                          {config.description && (
+                            <p className="text-sm text-gray-600 mb-3">{config.description}</p>
+                          )}
 
-                      <div className="flex flex-wrap gap-4 text-sm">
-                        <div>
-                          <span className="text-gray-600">Type:</span>
-                          <span className="ml-2 font-medium">{alertType?.label || config.alert_type}</span>
+                          <div className="flex flex-wrap gap-4 text-sm">
+                            <div>
+                              <span className="text-gray-500">Type:</span>
+                              <span className="ml-2 font-medium text-gray-700">{alertType?.label || config.alert_type}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Cooldown:</span>
+                              <span className="ml-2 font-medium text-gray-700">{config.cooldown_minutes} min</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Max/hour:</span>
+                              <span className="ml-2 font-medium text-gray-700">{config.max_alerts_per_hour}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2 mt-3">
+                            {config.channels.map((channel) => (
+                              <span
+                                key={channel}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg"
+                              >
+                                {getChannelIcon(channel)}
+                                {channel.replace('_', ' ')}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                        <div>
-                          <span className="text-gray-600">Cooldown:</span>
-                          <span className="ml-2 font-medium">{config.cooldown_minutes} min</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Max/hour:</span>
-                          <span className="ml-2 font-medium">{config.max_alerts_per_hour}</span>
-                        </div>
-                      </div>
 
-                      <div className="flex gap-2 mt-3">
-                        {config.channels.map((channel) => (
-                          <span
-                            key={channel}
-                            className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded"
+                        <div className="flex gap-2 flex-shrink-0">
+                          <button
+                            onClick={() => {
+                              setEditingConfig(config);
+                              setShowModal(true);
+                            }}
+                            className="p-2 text-lime-600 hover:bg-lime-50 rounded-lg transition-colors"
                           >
-                            {getChannelIcon(channel)}
-                            {channel}
-                          </span>
-                        ))}
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteConfig(config.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-
-                    <div className="flex gap-2 ml-4">
-                      <button
-                        onClick={() => {
-                          setEditingConfig(config);
-                          setShowModal(true);
-                        }}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => deleteConfig(config.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
                     </div>
                   </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+                );
+              })}
+            </div>
+          )}
 
-      {/* Modal for creating/editing alert */}
-      {showModal && (
-        <AlertModal
-          config={editingConfig}
-          alertTypes={alertTypes}
-          onClose={() => {
-            setShowModal(false);
-            setEditingConfig(null);
-          }}
-          onSave={() => {
-            setShowModal(false);
-            setEditingConfig(null);
-            fetchAlertConfigs();
-          }}
-        />
-      )}
+          {showModal && (
+            <AlertModal
+              config={editingConfig}
+              alertTypes={alertTypes}
+              onClose={() => {
+                setShowModal(false);
+                setEditingConfig(null);
+              }}
+              onSave={() => {
+                setShowModal(false);
+                setEditingConfig(null);
+                fetchAlertConfigs();
+              }}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 };
 
-// Alert Modal Component
 const AlertModal = ({ config, alertTypes, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     name: config?.name || '',
@@ -298,41 +308,41 @@ const AlertModal = ({ config, alertTypes, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
         <div className="p-6">
-          <h2 className="text-xl font-bold mb-4">
+          <h2 className="text-xl font-bold text-gray-900 mb-6">
             {config ? 'Edit' : 'Create'} Alert Configuration
           </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium mb-1">Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Name</label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition-colors"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition-colors"
                 rows="2"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Alert Type</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Alert Type</label>
                 <select
                   value={formData.alert_type}
                   onChange={(e) => setFormData({ ...formData, alert_type: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition-colors"
                 >
                   {alertTypes.map((type) => (
                     <option key={type.value} value={type.value}>{type.label}</option>
@@ -341,11 +351,11 @@ const AlertModal = ({ config, alertTypes, onClose, onSave }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Severity</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Severity</label>
                 <select
                   value={formData.severity}
                   onChange={(e) => setFormData({ ...formData, severity: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition-colors"
                 >
                   <option value="info">Info</option>
                   <option value="warning">Warning</option>
@@ -356,69 +366,69 @@ const AlertModal = ({ config, alertTypes, onClose, onSave }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Notification Channels</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Notification Channels</label>
               <div className="grid grid-cols-2 gap-2">
                 {['in_app', 'email', 'slack', 'webhook'].map((channel) => (
-                  <label key={channel} className="flex items-center gap-2 p-2 border rounded cursor-pointer hover:bg-gray-50">
+                  <label key={channel} className="flex items-center gap-2.5 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
                     <input
                       type="checkbox"
                       checked={formData.channels.includes(channel)}
                       onChange={() => toggleChannel(channel)}
-                      className="rounded"
+                      className="rounded border-gray-300 text-lime-600 focus:ring-lime-500"
                     />
-                    <span className="capitalize">{channel.replace('_', ' ')}</span>
+                    <span className="capitalize text-sm font-medium text-gray-700">{channel.replace('_', ' ')}</span>
                   </label>
                 ))}
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Cooldown (minutes)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Cooldown (minutes)</label>
                 <input
                   type="number"
                   value={formData.cooldown_minutes}
                   onChange={(e) => setFormData({ ...formData, cooldown_minutes: parseInt(e.target.value) })}
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition-colors"
                   min="1"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Max alerts per hour</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Max alerts per hour</label>
                 <input
                   type="number"
                   value={formData.max_alerts_per_hour}
                   onChange={(e) => setFormData({ ...formData, max_alerts_per_hour: parseInt(e.target.value) })}
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition-colors"
                   min="1"
                 />
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <input
                 type="checkbox"
                 id="group_similar"
                 checked={formData.group_similar}
                 onChange={(e) => setFormData({ ...formData, group_similar: e.target.checked })}
-                className="rounded"
+                className="rounded border-gray-300 text-lime-600 focus:ring-lime-500"
               />
-              <label htmlFor="group_similar" className="text-sm">Group similar alerts</label>
+              <label htmlFor="group_similar" className="text-sm font-medium text-gray-700">Group similar alerts</label>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t">
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition-colors"
                 disabled={saving}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                className="px-4 py-2.5 bg-lime-600 text-white rounded-xl hover:bg-lime-700 font-medium disabled:opacity-50 transition-colors"
                 disabled={saving}
               >
                 {saving ? 'Saving...' : config ? 'Update' : 'Create'}

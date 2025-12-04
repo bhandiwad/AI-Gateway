@@ -3,6 +3,7 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Loader2, Shield } from 'lucide-react';
 import axios from 'axios';
+import InfinitAILogo from '../components/InfinitAILogo';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -84,9 +85,10 @@ export default function Login() {
 
   if (ssoLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
         <div className="text-center">
-          <Loader2 className="animate-spin mx-auto mb-4" size={48} />
+          <InfinitAILogo className="w-16 h-16 mx-auto mb-4 animate-pulse" />
+          <Loader2 className="animate-spin mx-auto mb-4 text-lime-600" size={32} />
           <p className="text-gray-600">Authenticating with SSO...</p>
         </div>
       </div>
@@ -94,15 +96,19 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-8">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-6 sm:p-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-6 sm:p-8 border border-gray-100">
         <div className="text-center mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">AI Gateway</h1>
-          <p className="text-gray-500 mt-2 text-sm sm:text-base">Sign in to your account</p>
+          <div className="flex justify-center mb-4">
+            <InfinitAILogo className="w-14 h-14" />
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">InfinitAI</h1>
+          <p className="text-gray-500 mt-1 text-sm">AI Gateway</p>
+          <p className="text-gray-400 mt-2 text-sm sm:text-base">Sign in to your account</p>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
             {error}
           </div>
         )}
@@ -118,7 +124,7 @@ export default function Login() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 text-base transition-colors"
               placeholder="you@example.com"
             />
           </div>
@@ -133,7 +139,7 @@ export default function Login() {
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="current-password"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 text-base transition-colors"
               placeholder="Enter your password"
             />
           </div>
@@ -141,7 +147,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 flex items-center justify-center gap-2 text-base font-medium min-h-[48px] transition-colors"
+            className="w-full py-3 px-4 bg-lime-600 text-white rounded-xl hover:bg-lime-700 active:bg-lime-800 disabled:opacity-50 flex items-center justify-center gap-2 text-base font-medium min-h-[48px] transition-colors"
           >
             {loading && <Loader2 className="animate-spin" size={20} />}
             Sign In
@@ -150,7 +156,7 @@ export default function Login() {
 
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300"></div>
+            <div className="w-full border-t border-gray-200"></div>
           </div>
           <div className="relative flex justify-center text-sm">
             <span className="px-2 bg-white text-gray-500">Or continue with SSO</span>
@@ -166,7 +172,7 @@ export default function Login() {
               type="text"
               value={ssoProvider}
               onChange={(e) => setSsoProvider(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 text-base transition-colors"
               placeholder="e.g., okta, auth0, azure-ad"
             />
           </div>
@@ -175,7 +181,7 @@ export default function Login() {
             type="button"
             onClick={handleSSOLogin}
             disabled={ssoLoading}
-            className="w-full py-3 px-4 bg-gray-800 text-white rounded-lg hover:bg-gray-900 active:bg-gray-950 disabled:opacity-50 flex items-center justify-center gap-2 text-base font-medium min-h-[48px] transition-colors"
+            className="w-full py-3 px-4 bg-gray-900 text-white rounded-xl hover:bg-gray-800 active:bg-gray-950 disabled:opacity-50 flex items-center justify-center gap-2 text-base font-medium min-h-[48px] transition-colors"
           >
             <Shield size={20} />
             Sign in with SSO
@@ -184,7 +190,7 @@ export default function Login() {
 
         <p className="mt-6 text-center text-sm text-gray-500">
           Don't have an account?{' '}
-          <Link to="/register" className="text-blue-600 hover:underline font-medium">
+          <Link to="/register" className="text-lime-600 hover:text-lime-700 hover:underline font-medium">
             Sign up
           </Link>
         </p>
