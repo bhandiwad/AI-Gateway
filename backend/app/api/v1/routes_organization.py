@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from backend.app.core.security import get_current_user
-from backend.app.core.permissions import require_permission
+from backend.app.core.permissions import require_permission, Permission
 from backend.app.db.session import get_db
 from backend.app.db.models.user import User
 from backend.app.schemas.organization import (
@@ -20,11 +20,11 @@ router = APIRouter()
 # ==================== DEPARTMENT ENDPOINTS ====================
 
 @router.post("/departments", response_model=DepartmentResponse)
-@require_permission("settings:edit")
 async def create_department(
     department: DepartmentCreate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: dict = require_permission(Permission.SETTINGS_EDIT)
 ):
     """Create a new department."""
     return organization_service.create_department(
@@ -35,13 +35,13 @@ async def create_department(
 
 
 @router.get("/departments", response_model=List[DepartmentResponse])
-@require_permission("dashboard:view")
 async def list_departments(
     skip: int = 0,
     limit: int = 100,
     is_active: Optional[bool] = None,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: dict = require_permission(Permission.DASHBOARD_VIEW)
 ):
     """List all departments."""
     return organization_service.list_departments(
@@ -54,11 +54,11 @@ async def list_departments(
 
 
 @router.get("/departments/{department_id}", response_model=DepartmentWithStats)
-@require_permission("dashboard:view")
 async def get_department(
     department_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: dict = require_permission(Permission.DASHBOARD_VIEW)
 ):
     """Get department by ID with statistics."""
     department = organization_service.get_department_stats(
@@ -75,12 +75,12 @@ async def get_department(
 
 
 @router.put("/departments/{department_id}", response_model=DepartmentResponse)
-@require_permission("settings:edit")
 async def update_department(
     department_id: int,
     department_update: DepartmentUpdate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: dict = require_permission(Permission.SETTINGS_EDIT)
 ):
     """Update department."""
     department = organization_service.update_department(
@@ -98,11 +98,11 @@ async def update_department(
 
 
 @router.delete("/departments/{department_id}")
-@require_permission("settings:edit")
 async def delete_department(
     department_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: dict = require_permission(Permission.SETTINGS_EDIT)
 ):
     """Delete department (soft delete)."""
     success = organization_service.delete_department(
@@ -121,11 +121,11 @@ async def delete_department(
 # ==================== TEAM ENDPOINTS ====================
 
 @router.post("/teams", response_model=TeamResponse)
-@require_permission("users:create")
 async def create_team(
     team: TeamCreate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: dict = require_permission(Permission.USERS_CREATE)
 ):
     """Create a new team."""
     return organization_service.create_team(
@@ -136,14 +136,14 @@ async def create_team(
 
 
 @router.get("/teams", response_model=List[TeamResponse])
-@require_permission("dashboard:view")
 async def list_teams(
     department_id: Optional[int] = None,
     skip: int = 0,
     limit: int = 100,
     is_active: Optional[bool] = None,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: dict = require_permission(Permission.DASHBOARD_VIEW)
 ):
     """List all teams."""
     return organization_service.list_teams(
@@ -157,11 +157,11 @@ async def list_teams(
 
 
 @router.get("/teams/{team_id}", response_model=TeamWithStats)
-@require_permission("dashboard:view")
 async def get_team(
     team_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: dict = require_permission(Permission.DASHBOARD_VIEW)
 ):
     """Get team by ID with statistics."""
     team = organization_service.get_team_stats(
@@ -178,12 +178,12 @@ async def get_team(
 
 
 @router.put("/teams/{team_id}", response_model=TeamResponse)
-@require_permission("users:edit")
 async def update_team(
     team_id: int,
     team_update: TeamUpdate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: dict = require_permission(Permission.USERS_EDIT)
 ):
     """Update team."""
     team = organization_service.update_team(
@@ -201,11 +201,11 @@ async def update_team(
 
 
 @router.delete("/teams/{team_id}")
-@require_permission("users:edit")
 async def delete_team(
     team_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: dict = require_permission(Permission.USERS_EDIT)
 ):
     """Delete team (soft delete)."""
     success = organization_service.delete_team(
@@ -224,12 +224,12 @@ async def delete_team(
 # ==================== TEAM MEMBER ENDPOINTS ====================
 
 @router.post("/teams/{team_id}/members")
-@require_permission("users:edit")
 async def add_team_member(
     team_id: int,
     member: TeamMemberAdd,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: dict = require_permission(Permission.USERS_EDIT)
 ):
     """Add member to team."""
     success = organization_service.add_team_member(
@@ -248,12 +248,12 @@ async def add_team_member(
 
 
 @router.delete("/teams/{team_id}/members")
-@require_permission("users:edit")
 async def remove_team_member(
     team_id: int,
     member: TeamMemberRemove,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: dict = require_permission(Permission.USERS_EDIT)
 ):
     """Remove member from team."""
     success = organization_service.remove_team_member(
@@ -271,11 +271,11 @@ async def remove_team_member(
 
 
 @router.get("/teams/{team_id}/members")
-@require_permission("dashboard:view")
 async def list_team_members(
     team_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: dict = require_permission(Permission.DASHBOARD_VIEW)
 ):
     """List all members of a team."""
     members = organization_service.list_team_members(
@@ -289,10 +289,10 @@ async def list_team_members(
 # ==================== ANALYTICS ENDPOINTS ====================
 
 @router.get("/stats", response_model=OrganizationStats)
-@require_permission("dashboard:view")
 async def get_organization_stats(
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: dict = require_permission(Permission.DASHBOARD_VIEW)
 ):
     """Get organization-wide statistics."""
     return organization_service.get_organization_stats(

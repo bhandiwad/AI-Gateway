@@ -106,7 +106,7 @@ class NotificationPreferenceUpdate(BaseModel):
 @router.get("/configs", response_model=List[AlertConfigResponse])
 async def list_alert_configs(
     tenant: Tenant = Depends(get_current_tenant),
-    current_user: dict = Depends(require_permission(Permission.SETTINGS_VIEW)),
+    _auth: dict = require_permission(Permission.SETTINGS_VIEW),
     db: Session = Depends(get_db)
 ):
     """List all alert configurations for the tenant."""
@@ -120,7 +120,7 @@ async def list_alert_configs(
 async def create_alert_config(
     config_data: AlertConfigCreate,
     tenant: Tenant = Depends(get_current_tenant),
-    current_user: dict = Depends(require_permission(Permission.SETTINGS_EDIT)),
+    _auth: dict = require_permission(Permission.SETTINGS_EDIT),
     db: Session = Depends(get_db)
 ):
     """Create a new alert configuration."""
@@ -136,7 +136,7 @@ async def create_alert_config(
         max_alerts_per_hour=config_data.max_alerts_per_hour,
         severity=config_data.severity,
         group_similar=config_data.group_similar,
-        created_by=current_user.get("user_id")
+        created_by=_auth.get("user_id")
     )
     
     db.add(config)
@@ -150,7 +150,7 @@ async def create_alert_config(
 async def get_alert_config(
     config_id: int,
     tenant: Tenant = Depends(get_current_tenant),
-    current_user: dict = Depends(require_permission(Permission.SETTINGS_VIEW)),
+    _auth: dict = require_permission(Permission.SETTINGS_VIEW),
     db: Session = Depends(get_db)
 ):
     """Get a specific alert configuration."""
@@ -170,7 +170,7 @@ async def update_alert_config(
     config_id: int,
     config_data: AlertConfigUpdate,
     tenant: Tenant = Depends(get_current_tenant),
-    current_user: dict = Depends(require_permission(Permission.SETTINGS_EDIT)),
+    _auth: dict = require_permission(Permission.SETTINGS_EDIT),
     db: Session = Depends(get_db)
 ):
     """Update an alert configuration."""
@@ -201,7 +201,7 @@ async def update_alert_config(
 async def delete_alert_config(
     config_id: int,
     tenant: Tenant = Depends(get_current_tenant),
-    current_user: dict = Depends(require_permission(Permission.SETTINGS_EDIT)),
+    _auth: dict = require_permission(Permission.SETTINGS_EDIT),
     db: Session = Depends(get_db)
 ):
     """Delete an alert configuration."""
@@ -224,7 +224,7 @@ async def list_notifications(
     unread_only: bool = False,
     limit: int = 50,
     tenant: Tenant = Depends(get_current_tenant),
-    current_user: dict = Depends(require_permission(Permission.DASHBOARD_VIEW)),
+    _auth: dict = require_permission(Permission.DASHBOARD_VIEW),
     db: Session = Depends(get_db)
 ):
     """List notifications for the tenant."""
@@ -245,7 +245,7 @@ async def list_notifications(
 @router.get("/notifications/unread/count")
 async def get_unread_count(
     tenant: Tenant = Depends(get_current_tenant),
-    current_user: dict = Depends(require_permission(Permission.DASHBOARD_VIEW)),
+    _auth: dict = require_permission(Permission.DASHBOARD_VIEW),
     db: Session = Depends(get_db)
 ):
     """Get count of unread notifications."""
@@ -261,7 +261,7 @@ async def get_unread_count(
 async def mark_notification_read(
     notification_id: int,
     tenant: Tenant = Depends(get_current_tenant),
-    current_user: dict = Depends(require_permission(Permission.DASHBOARD_VIEW)),
+    _auth: dict = require_permission(Permission.DASHBOARD_VIEW),
     db: Session = Depends(get_db)
 ):
     """Mark a notification as read."""
@@ -273,7 +273,7 @@ async def mark_notification_read(
     if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")
     
-    alert_service.mark_as_read(db, notification_id, current_user.get("user_id"))
+    alert_service.mark_as_read(db, notification_id, _auth.get("user_id"))
     
     return {"message": "Notification marked as read"}
 
@@ -282,7 +282,7 @@ async def mark_notification_read(
 async def acknowledge_notification(
     notification_id: int,
     tenant: Tenant = Depends(get_current_tenant),
-    current_user: dict = Depends(require_permission(Permission.DASHBOARD_VIEW)),
+    _auth: dict = require_permission(Permission.DASHBOARD_VIEW),
     db: Session = Depends(get_db)
 ):
     """Acknowledge a notification."""
@@ -294,7 +294,7 @@ async def acknowledge_notification(
     if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")
     
-    alert_service.acknowledge_alert(db, notification_id, current_user.get("user_id"))
+    alert_service.acknowledge_alert(db, notification_id, _auth.get("user_id"))
     
     return {"message": "Notification acknowledged"}
 
@@ -302,7 +302,7 @@ async def acknowledge_notification(
 @router.post("/notifications/mark-all-read")
 async def mark_all_read(
     tenant: Tenant = Depends(get_current_tenant),
-    current_user: dict = Depends(require_permission(Permission.DASHBOARD_VIEW)),
+    _auth: dict = require_permission(Permission.DASHBOARD_VIEW),
     db: Session = Depends(get_db)
 ):
     """Mark all notifications as read."""
@@ -322,7 +322,7 @@ async def mark_all_read(
 async def test_alert(
     alert_type: AlertType,
     tenant: Tenant = Depends(get_current_tenant),
-    current_user: dict = Depends(require_permission(Permission.SETTINGS_EDIT)),
+    _auth: dict = require_permission(Permission.SETTINGS_EDIT),
     db: Session = Depends(get_db)
 ):
     """Send a test alert."""
@@ -332,7 +332,7 @@ async def test_alert(
         alert_type=alert_type,
         title=f"Test Alert: {alert_type.value}",
         message="This is a test alert to verify your alert configuration.",
-        context={"test": True, "triggered_by": current_user.get("email", "admin")},
+        context={"test": True, "triggered_by": _auth.get("email", "admin")},
         severity=AlertSeverity.INFO
     )
     
@@ -354,11 +354,11 @@ async def test_alert(
 @router.get("/preferences")
 async def get_notification_preferences(
     tenant: Tenant = Depends(get_current_tenant),
-    current_user: dict = Depends(require_permission(Permission.DASHBOARD_VIEW)),
+    _auth: dict = require_permission(Permission.DASHBOARD_VIEW),
     db: Session = Depends(get_db)
 ):
     """Get user's notification preferences."""
-    user_id = current_user.get("user_id")
+    user_id = _auth.get("user_id")
     
     prefs = db.query(NotificationPreference).filter(
         NotificationPreference.user_id == user_id
@@ -381,11 +381,11 @@ async def get_notification_preferences(
 async def update_notification_preferences(
     prefs_data: NotificationPreferenceUpdate,
     tenant: Tenant = Depends(get_current_tenant),
-    current_user: dict = Depends(require_permission(Permission.DASHBOARD_VIEW)),
+    _auth: dict = require_permission(Permission.DASHBOARD_VIEW),
     db: Session = Depends(get_db)
 ):
     """Update user's notification preferences."""
-    user_id = current_user.get("user_id")
+    user_id = _auth.get("user_id")
     
     prefs = db.query(NotificationPreference).filter(
         NotificationPreference.user_id == user_id

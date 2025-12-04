@@ -4,7 +4,7 @@ from typing import List, Optional
 import structlog
 
 from backend.app.core.security import get_current_user
-from backend.app.core.permissions import require_permission
+from backend.app.core.permissions import require_permission, Permission
 from backend.app.db.session import get_db
 from backend.app.db.models.user import User
 from backend.app.db.models.external_guardrail_provider import ExternalGuardrailProvider
@@ -26,20 +26,19 @@ router = APIRouter()
 # ==================== PROVIDER MANAGEMENT ====================
 
 @router.post("/providers", response_model=ExternalGuardrailProviderResponse)
-@require_permission("settings:edit")
 async def create_external_provider(
     provider_data: ExternalGuardrailProviderCreate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: dict = require_permission(Permission.SETTINGS_EDIT)
 ):
     """Create a new external guardrail provider."""
-    # Create provider in database
     provider = ExternalGuardrailProvider(
         tenant_id=current_user.tenant_id if not provider_data.is_global else None,
         name=provider_data.name,
         provider_type=provider_data.provider_type,
         description=provider_data.description,
-        api_key_encrypted=provider_data.api_key,  # TODO: Encrypt this
+        api_key_encrypted=provider_data.api_key,
         api_endpoint=provider_data.api_endpoint,
         region=provider_data.region,
         timeout_seconds=provider_data.timeout_seconds,
@@ -55,7 +54,6 @@ async def create_external_provider(
     db.commit()
     db.refresh(provider)
     
-    # Register with provider manager
     config = GuardrailProviderConfig(
         enabled=True,
         api_key=provider_data.api_key,
@@ -74,7 +72,6 @@ async def create_external_provider(
     )
     
     if success:
-        # Update capabilities
         registered_provider = guardrail_provider_manager.providers.get(f"{provider.id}_{provider.name}")
         if registered_provider:
             provider.capabilities = [c.value for c in registered_provider.get_capabilities()]
@@ -92,10 +89,10 @@ async def create_external_provider(
 
 
 @router.get("/providers", response_model=List[ExternalGuardrailProviderResponse])
-@require_permission("guardrails:view")
 async def list_external_providers(
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: dict = require_permission(Permission.GUARDRAILS_VIEW)
 ):
     """List all external guardrail providers."""
     providers = db.query(ExternalGuardrailProvider).filter(
@@ -107,11 +104,11 @@ async def list_external_providers(
 
 
 @router.get("/providers/{provider_id}", response_model=ExternalGuardrailProviderResponse)
-@require_permission("guardrails:view")
 async def get_external_provider(
     provider_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: dict = require_permission(Permission.GUARDRAILS_VIEW)
 ):
     """Get external guardrail provider by ID."""
     provider = db.query(ExternalGuardrailProvider).filter(
@@ -130,12 +127,12 @@ async def get_external_provider(
 
 
 @router.put("/providers/{provider_id}", response_model=ExternalGuardrailProviderResponse)
-@require_permission("settings:edit")
 async def update_external_provider(
     provider_id: int,
     provider_update: ExternalGuardrailProviderUpdate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: dict = require_permission(Permission.SETTINGS_EDIT)
 ):
     """Update external guardrail provider."""
     provider = db.query(ExternalGuardrailProvider).filter(
@@ -152,7 +149,7 @@ async def update_external_provider(
     update_dict = provider_update.model_dump(exclude_unset=True)
     for key, value in update_dict.items():
         if key == "api_key":
-            setattr(provider, "api_key_encrypted", value)  # TODO: Encrypt
+            setattr(provider, "api_key_encrypted", value)
         else:
             setattr(provider, key, value)
     
@@ -169,11 +166,11 @@ async def update_external_provider(
 
 
 @router.delete("/providers/{provider_id}")
-@require_permission("settings:edit")
 async def delete_external_provider(
     provider_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: dict = require_permission(Permission.SETTINGS_EDIT)
 ):
     """Delete external guardrail provider."""
     provider = db.query(ExternalGuardrailProvider).filter(
@@ -187,7 +184,6 @@ async def delete_external_provider(
             detail="Provider not found"
         )
     
-    # Unregister from manager
     guardrail_provider_manager.unregister_provider(f"{provider.id}_{provider.name}")
     
     db.delete(provider)
@@ -205,12 +201,12 @@ async def delete_external_provider(
 # ==================== PROVIDER TESTING ====================
 
 @router.post("/providers/{provider_id}/test", response_model=GuardrailCheckResponse)
-@require_permission("guardrails:test")
 async def test_external_provider(
     provider_id: int,
     request: GuardrailCheckRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: dict = require_permission(Permission.GUARDRAILS_TEST)
 ):
     """Test an external guardrail provider with sample text."""
     provider = db.query(ExternalGuardrailProvider).filter(
@@ -251,11 +247,11 @@ async def test_external_provider(
 
 
 @router.post("/check", response_model=GuardrailCheckResponse)
-@require_permission("guardrails:test")
 async def check_with_providers(
     request: GuardrailCheckRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: dict = require_permission(Permission.GUARDRAILS_TEST)
 ):
     """Check text using multiple external providers."""
     if request.stage == "input":
@@ -284,10 +280,10 @@ async def check_with_providers(
 # ==================== HEALTH CHECK ====================
 
 @router.get("/providers/health/all", response_model=List[ProviderHealthResponse])
-@require_permission("guardrails:view")
 async def health_check_all_providers(
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: dict = require_permission(Permission.GUARDRAILS_VIEW)
 ):
     """Check health of all registered external providers."""
     health_results = await guardrail_provider_manager.health_check_all()
@@ -302,7 +298,6 @@ async def health_check_all_providers(
         provider_name = f"{provider.id}_{provider.name}"
         is_healthy = health_results.get(provider_name, False)
         
-        # Update health status
         provider.is_healthy = is_healthy
         provider.last_health_check = db.func.now()
         
@@ -321,9 +316,9 @@ async def health_check_all_providers(
 # ==================== PROVIDER INFO ====================
 
 @router.get("/providers/info/all")
-@require_permission("guardrails:view")
 async def get_all_provider_info(
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    _auth: dict = require_permission(Permission.GUARDRAILS_VIEW)
 ):
     """Get information about all registered providers in the manager."""
     return guardrail_provider_manager.get_provider_info()
