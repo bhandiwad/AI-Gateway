@@ -11,7 +11,6 @@ import {
   FileText,
   DollarSign,
   Shield,
-  ShieldCheck,
   GitBranch,
   Building2,
   Bell
@@ -25,7 +24,6 @@ const navItems = [
   { path: '/models', label: 'Models', icon: Layers, permission: PERMISSIONS.DASHBOARD_VIEW },
   { path: '/playground', label: 'Playground', icon: MessageSquare, permission: PERMISSIONS.GATEWAY_USE },
   { path: '/guardrails', label: 'Guardrails', icon: Shield, permission: PERMISSIONS.GUARDRAILS_VIEW },
-  { path: '/external-guardrails', label: 'External Guardrails', icon: ShieldCheck, permission: PERMISSIONS.GUARDRAILS_VIEW },
   { path: '/api-keys', label: 'API Keys', icon: Key, permission: PERMISSIONS.API_KEYS_VIEW },
   { path: '/users', label: 'Users', icon: Users, permission: PERMISSIONS.USERS_VIEW },
   { path: '/organization', label: 'Organization', icon: Building2, permission: PERMISSIONS.USERS_VIEW },

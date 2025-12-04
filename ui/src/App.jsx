@@ -17,7 +17,6 @@ import Guardrails from './pages/Guardrails';
 import RouterConfig from './pages/RouterConfig';
 import Users from './pages/Users';
 import Organization from './pages/Organization';
-import ExternalGuardrails from './pages/ExternalGuardrails';
 import Alerts from './pages/Alerts';
 import { Menu, X } from 'lucide-react';
 
@@ -193,14 +192,6 @@ function AppRoutes() {
         </PrivateRoute>
       } />
       
-      <Route path="/external-guardrails" element={
-        <PrivateRoute>
-          <AppLayout>
-            <ExternalGuardrails />
-          </AppLayout>
-        </PrivateRoute>
-      } />
-      
       <Route path="/alerts" element={
         <PrivateRoute>
           <AppLayout>
@@ -209,8 +200,9 @@ function AppRoutes() {
         </PrivateRoute>
       } />
 
-      {/* Redirect old /health route to dashboard */}
+      {/* Redirect old routes */}
       <Route path="/health" element={<Navigate to="/" replace />} />
+      <Route path="/external-guardrails" element={<Navigate to="/guardrails" replace />} />
     </Routes>
   );
 }
