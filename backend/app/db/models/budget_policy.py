@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
 
-from backend.app.db.base import Base
+from backend.app.db.session import Base
 
 
 class BudgetScope(str, enum.Enum):

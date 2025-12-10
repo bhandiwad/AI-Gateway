@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../api/client';
+import BudgetPolicies from '../components/BudgetPolicies';
 import { 
   DollarSign, 
   Download, 
@@ -373,6 +374,10 @@ export default function Billing() {
               </tbody>
             </table>
           </div>
+        </div>
+
+        <div className="mt-6">
+          <BudgetPolicies />
         </div>
       </div>
     </div>

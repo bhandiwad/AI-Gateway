@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
 from backend.app.db.session import get_db
-from backend.app.api.v1.routes_auth import get_current_user_from_token
+from backend.app.core.security import get_current_user
 from backend.app.services.budget_enforcement_service import BudgetEnforcementService
 
 router = APIRouter(prefix="/budget", tags=["Budget Management"])
@@ -60,7 +60,7 @@ class BudgetCheckRequest(BaseModel):
 async def list_budget_policies(
     scope_type: Optional[str] = None,
     scope_id: Optional[int] = None,
-    current_user = Depends(get_current_user_from_token),
+    current_user = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """List all budget policies for the current tenant."""
@@ -76,7 +76,7 @@ async def list_budget_policies(
 @router.post("/policies")
 async def create_budget_policy(
     policy: BudgetPolicyCreate,
-    current_user = Depends(get_current_user_from_token),
+    current_user = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Create a new budget policy (disabled by default)."""
@@ -129,7 +129,7 @@ async def create_budget_policy(
 async def update_budget_policy(
     policy_id: int,
     updates: BudgetPolicyUpdate,
-    current_user = Depends(get_current_user_from_token),
+    current_user = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Update an existing budget policy."""
@@ -162,7 +162,7 @@ async def update_budget_policy(
 @router.delete("/policies/{policy_id}")
 async def delete_budget_policy(
     policy_id: int,
-    current_user = Depends(get_current_user_from_token),
+    current_user = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Delete a budget policy."""
@@ -185,7 +185,7 @@ async def delete_budget_policy(
 @router.post("/policies/{policy_id}/toggle")
 async def toggle_budget_policy(
     policy_id: int,
-    current_user = Depends(get_current_user_from_token),
+    current_user = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Toggle a budget policy on/off."""
@@ -216,7 +216,7 @@ async def toggle_budget_policy(
 @router.post("/check")
 async def check_budget(
     request: BudgetCheckRequest,
-    current_user = Depends(get_current_user_from_token),
+    current_user = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Check if a request would be allowed under current budget policies."""
@@ -238,7 +238,7 @@ async def check_budget(
 
 @router.get("/scope-options")
 async def get_scope_options(
-    current_user = Depends(get_current_user_from_token),
+    current_user = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Get available scope options for budget policies."""

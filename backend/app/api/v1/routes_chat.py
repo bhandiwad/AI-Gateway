@@ -14,6 +14,7 @@ from backend.app.services.guardrails_service import guardrails_service, Guardrai
 from backend.app.services.guardrail_resolver import guardrail_resolver
 from backend.app.services.tenancy_service import tenancy_service
 from backend.app.services.usage_service import usage_service
+from backend.app.services.budget_enforcement_service import BudgetEnforcementService
 from backend.app.schemas.chat import (
     ChatCompletionRequest, ChatCompletionResponse,
     EmbeddingRequest, EmbeddingResponse,
@@ -58,6 +59,35 @@ async def chat_completions(
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=f"Rate limit exceeded. Limit: {rate_limit}/minute"
+        )
+    
+    budget_service = BudgetEnforcementService(db)
+    budget_check = budget_service.check_budget(
+        tenant_id=tenant.id,
+        model=request.model or "unknown",
+        estimated_cost=0.01,
+        api_key_id=api_key.id,
+        user_id=api_key.owner_user_id,
+        team_id=api_key.team_id,
+        department_id=api_key.department_id,
+        route_id=None
+    )
+    
+    if not budget_check.allowed:
+        usage_service.log_usage(
+            db=db,
+            tenant_id=tenant.id,
+            api_key_id=api_key.id,
+            request_id=request_id,
+            endpoint="chat/completions",
+            model=request.model or "unknown",
+            provider="budget_blocked",
+            status="blocked",
+            error_message=budget_check.message
+        )
+        raise HTTPException(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+            detail=budget_check.message
         )
     
     allowed_models = guardrail_resolver.resolve_allowed_models(
