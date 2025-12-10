@@ -196,6 +196,7 @@ export default function PolicyDesigner({ onProfileSelect }) {
     if (!editingProfile || !externalProviderModal.phase) return;
 
     const providerInfo = EXTERNAL_PROVIDER_TYPES.find(p => p.id === externalProviderConfig.provider_type);
+    const effectiveName = externalProviderConfig.provider_name?.trim() || externalProviderConfig.provider_type;
     const newProcessor = {
       id: `external_provider-${Date.now()}`,
       type: 'external_provider',
@@ -204,7 +205,7 @@ export default function PolicyDesigner({ onProfileSelect }) {
       action: externalProviderConfig.action,
       config: {
         provider_type: externalProviderConfig.provider_type,
-        provider_name: externalProviderConfig.provider_name || externalProviderConfig.provider_type
+        provider_name: effectiveName
       }
     };
 
@@ -221,6 +222,21 @@ export default function PolicyDesigner({ onProfileSelect }) {
     }
 
     setExternalProviderModal({ open: false, phase: null });
+  };
+
+  const getProcessorDetails = (processor) => {
+    if (processor.type === 'external_provider' && processor.config) {
+      const providerInfo = EXTERNAL_PROVIDER_TYPES.find(p => p.id === processor.config.provider_type);
+      return {
+        name: providerInfo?.name || processor.config.provider_type || 'External Provider',
+        desc: `${providerInfo?.desc || ''} - Action: ${processor.action || 'block'}`
+      };
+    }
+    const processorInfo = PROCESSOR_TYPES.find(p => p.id === processor.type);
+    return {
+      name: processorInfo?.name || processor.name || 'Unknown',
+      desc: processorInfo?.desc || 'Custom processor'
+    };
   };
 
   const removeProcessor = (phase, processorId) => {
@@ -368,10 +384,19 @@ export default function PolicyDesigner({ onProfileSelect }) {
                     )}
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900 text-sm">{processor.name}</div>
-                    <div className="text-xs text-gray-500">
-                      {PROCESSOR_TYPES.find(p => p.id === processor.type)?.desc || 'Custom processor'}
+                    <div className="font-medium text-gray-900 text-sm">
+                      {processor.type === 'external_provider' 
+                        ? getProcessorDetails(processor).name 
+                        : processor.name}
                     </div>
+                    <div className="text-xs text-gray-500">
+                      {getProcessorDetails(processor).desc}
+                    </div>
+                    {processor.type === 'external_provider' && processor.config && (
+                      <div className="text-xs text-lime-600 mt-1">
+                        Provider: {processor.config.provider_name || processor.config.provider_type}
+                      </div>
+                    )}
                   </div>
                 </div>
                 {editingProfile && canEdit && (

@@ -69,6 +69,13 @@ The GuardrailResolver service (`backend/app/services/guardrail_resolver.py`) imp
 
 The ProfileGuardrailsService (`backend/app/services/profile_guardrails_service.py`) executes processor chains with actions: allow, block, redact, warn.
 
+### External Guardrail Provider Integration
+External guardrail providers (OpenAI Moderation, AWS Comprehend, Azure Content Safety, Google NLP) are integrated as processor types within guardrail profiles:
+- **Processor Type**: `external_provider` with config containing `provider_type` and `provider_name`
+- **Supported Providers**: openai, aws_comprehend, azure_content_safety, google_nlp
+- **Async Execution**: External provider checks execute asynchronously via GuardrailProviderManager (`backend/app/services/guardrail_provider_manager.py`)
+- **UI Configuration**: PolicyDesigner component allows adding external providers to processor chains with action selection (block/warn/allow)
+
 ### Runtime Model Enforcement
 API routes can define `allowed_models` list. The chat completion endpoint (`routes_chat.py`) enforces this at runtime, rejecting requests for disallowed models with HTTP 403.
 
