@@ -35,6 +35,12 @@ from backend.app.db.models.alerts import (
     AlertChannel,
     AlertSeverity
 )
+from backend.app.db.models.budget_policy import (
+    BudgetPolicy,
+    BudgetUsageSnapshot,
+    BudgetScope,
+    BudgetPeriod
+)
 
 __all__ = [
     "Tenant", "APIKey", "UsageLog", "User", "UserRole", "UserStatus",
@@ -45,5 +51,6 @@ __all__ = [
     "GuardrailProfile", "ProcessorDefinition",
     "ProviderHealthStatus", "ProviderHealthHistory", "LoadBalancerMetrics", "CircuitBreakerEvent",
     "AlertConfig", "AlertNotification", "AlertThrottle", "NotificationPreference",
-    "AlertType", "AlertChannel", "AlertSeverity"
+    "AlertType", "AlertChannel", "AlertSeverity",
+    "BudgetPolicy", "BudgetUsageSnapshot", "BudgetScope", "BudgetPeriod"
 ]

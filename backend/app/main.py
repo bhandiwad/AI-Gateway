@@ -9,7 +9,7 @@ import time
 from backend.app.core.config import settings
 from backend.app.core.rate_limit import rate_limiter
 from backend.app.db.session import engine, Base
-from backend.app.api.v1 import routes_chat, routes_admin, routes_users, routes_audit, routes_billing, routes_guardrails, routes_router, routes_providers, routes_organization, routes_external_guardrails, routes_load_balancer, routes_alerts
+from backend.app.api.v1 import routes_chat, routes_admin, routes_users, routes_audit, routes_billing, routes_guardrails, routes_router, routes_providers, routes_organization, routes_external_guardrails, routes_load_balancer, routes_alerts, routes_budget
 from backend.app.utils.metrics import get_metrics, ACTIVE_REQUESTS
 
 from backend.app.db.models.tenant import Tenant
@@ -209,6 +209,12 @@ app.include_router(
     routes_alerts.router,
     prefix=f"{settings.API_V1_PREFIX}/admin/alerts",
     tags=["Alerts & Notifications"]
+)
+
+app.include_router(
+    routes_budget.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin",
+    tags=["Budget Management"]
 )
 
 
