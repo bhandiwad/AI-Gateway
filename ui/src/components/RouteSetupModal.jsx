@@ -17,6 +17,7 @@ export default function RouteSetupModal({ isOpen, onClose, onSave, editRoute, to
     default_model: '',
     policy_id: null,
     profile_id: null,
+    allowed_models: '',
     strip_path_prefix: '',
     add_path_prefix: '',
     timeout_override: null,
@@ -25,10 +26,12 @@ export default function RouteSetupModal({ isOpen, onClose, onSave, editRoute, to
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [providers, setProviders] = useState([]);
+  const [guardrailProfiles, setGuardrailProfiles] = useState([]);
 
   useEffect(() => {
     if (isOpen) {
       fetchProviders();
+      fetchGuardrailProfiles();
       if (editRoute) {
         setFormData({
           path: editRoute.path || '',
@@ -42,6 +45,7 @@ export default function RouteSetupModal({ isOpen, onClose, onSave, editRoute, to
           default_model: editRoute.default_model || '',
           policy_id: editRoute.policy_id || null,
           profile_id: editRoute.profile_id || null,
+          allowed_models: editRoute.allowed_models?.join(', ') || '',
           strip_path_prefix: editRoute.strip_path_prefix || '',
           add_path_prefix: editRoute.add_path_prefix || '',
           timeout_override: editRoute.timeout_override || null,
@@ -60,6 +64,7 @@ export default function RouteSetupModal({ isOpen, onClose, onSave, editRoute, to
           default_model: '',
           policy_id: null,
           profile_id: null,
+          allowed_models: '',
           strip_path_prefix: '',
           add_path_prefix: '',
           timeout_override: null,
@@ -81,6 +86,18 @@ export default function RouteSetupModal({ isOpen, onClose, onSave, editRoute, to
     }
   };
 
+  const fetchGuardrailProfiles = async () => {
+    try {
+      const response = await api.get('/admin/providers/profiles/list', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setGuardrailProfiles(response.data || []);
+    } catch (err) {
+      console.error('Failed to fetch guardrail profiles:', err);
+      setGuardrailProfiles([]);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!formData.path) {
       setError('Path is required');
@@ -96,11 +113,16 @@ export default function RouteSetupModal({ isOpen, onClose, onSave, editRoute, to
       setSaving(true);
       setError(null);
 
+      const allowedModelsArray = formData.allowed_models
+        ? formData.allowed_models.split(',').map(m => m.trim()).filter(m => m)
+        : null;
+      
       const payload = {
         ...formData,
         rate_limit_rpm: formData.rate_limit_rpm || null,
         rate_limit_tpm: formData.rate_limit_tpm || null,
-        timeout_override: formData.timeout_override || null
+        timeout_override: formData.timeout_override || null,
+        allowed_models: allowedModelsArray
       };
 
       if (editRoute?.id) {
@@ -246,7 +268,7 @@ export default function RouteSetupModal({ isOpen, onClose, onSave, editRoute, to
               <select
                 value={formData.default_provider_id || ''}
                 onChange={(e) => setFormData({ ...formData, default_provider_id: e.target.value ? parseInt(e.target.value) : null })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500"
               >
                 <option value="">Use Global Default</option>
                 {providers.map((provider) => (
@@ -263,8 +285,43 @@ export default function RouteSetupModal({ isOpen, onClose, onSave, editRoute, to
                 value={formData.default_model}
                 onChange={(e) => setFormData({ ...formData, default_model: e.target.value })}
                 placeholder="e.g., gpt-4o"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500"
               />
+            </div>
+          </div>
+
+          <div className="bg-lime-50 border border-lime-200 rounded-xl p-4 space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">Guardrail Profile</label>
+              <select
+                value={formData.profile_id || ''}
+                onChange={(e) => setFormData({ ...formData, profile_id: e.target.value ? parseInt(e.target.value) : null })}
+                className="w-full px-4 py-2 border border-lime-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500 bg-white"
+              >
+                <option value="">Use Default (Tenant/API Key Level)</option>
+                {guardrailProfiles.map((profile) => (
+                  <option key={profile.id} value={profile.id}>
+                    {profile.name} {profile.description ? `- ${profile.description.substring(0, 40)}...` : ''}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-600 mt-1">
+                Override the guardrail profile for this specific route. Leave empty to use hierarchical resolution.
+              </p>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">Allowed Models</label>
+              <input
+                type="text"
+                value={formData.allowed_models}
+                onChange={(e) => setFormData({ ...formData, allowed_models: e.target.value })}
+                placeholder="gpt-4o, gpt-4o-mini, claude-3-sonnet"
+                className="w-full px-4 py-2 border border-lime-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500 bg-white font-mono text-sm"
+              />
+              <p className="text-xs text-gray-600 mt-1">
+                Comma-separated list of allowed models. Leave empty to allow all models.
+              </p>
             </div>
           </div>
 

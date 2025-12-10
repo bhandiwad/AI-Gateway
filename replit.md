@@ -54,9 +54,23 @@ PostgreSQL is used for data persistence with tables for `tenants`, `api_keys`, `
 ### F5-Style Configuration System
 A core architectural decision is the F5-style configuration system, enabling granular control over AI Gateway behavior:
 -   **Provider Configuration**: Multi-step wizard for defining and managing AI model providers (e.g., OpenAI, Azure) with detailed connection, authentication, rate limiting, and traffic classification settings.
--   **API Route Management**: Custom route creation with per-route policies, rate limits, and model/provider assignments.
+-   **API Route Management**: Custom route creation with per-route policies, rate limits, and model/provider assignments. Includes allowed_models enforcement at runtime.
 -   **Unified Guardrail Profiles**: Centralized management of guardrail configurations as "profiles" consisting of ordered chains of request and response processors (e.g., PII detection, toxicity filtering, prompt injection detection). These profiles are assignable at tenant, API key, and API route levels.
 -   **Enhanced Tenant and API Key Management**: Extended models for tenants and API keys to include F5-style controls such as default guardrail profiles, spend limits, logging policies, and allowed providers/models. Includes validation to prevent cross-tenant resource exposure.
+
+### Hierarchical Guardrail Resolution
+The GuardrailResolver service (`backend/app/services/guardrail_resolver.py`) implements hierarchical profile resolution:
+1. **Route Level**: If the API route has `profile_id` set, use that profile
+2. **API Key Level**: If the API key has `guardrail_profile_id` set, use that profile  
+3. **Team Level**: If the API key's team has `guardrail_profile_id` set, use that profile
+4. **Department Level**: If the team's department has `guardrail_profile_id` set, use that profile
+5. **Tenant Level**: If the tenant has `guardrail_profile_id` set, use that profile
+6. **System Default**: Fall back to system default profile
+
+The ProfileGuardrailsService (`backend/app/services/profile_guardrails_service.py`) executes processor chains with actions: allow, block, redact, warn.
+
+### Runtime Model Enforcement
+API routes can define `allowed_models` list. The chat completion endpoint (`routes_chat.py`) enforces this at runtime, rejecting requests for disallowed models with HTTP 403.
 
 ## External Dependencies
 

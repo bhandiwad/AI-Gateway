@@ -34,6 +34,10 @@ class Team(Base):
     
     lead_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     
+    guardrail_profile_id = Column(Integer, ForeignKey("guardrail_profiles.id"), nullable=True)
+    allowed_models = Column(JSON, default=list)
+    allowed_providers = Column(JSON, default=list)
+    
     tags = Column(JSON, default=list)
     metadata_ = Column("metadata", JSON, default=dict)
     
@@ -43,6 +47,7 @@ class Team(Base):
     tenant = relationship("Tenant", foreign_keys=[tenant_id])
     department = relationship("Department", back_populates="teams")
     lead = relationship("User", foreign_keys=[lead_user_id])
+    guardrail_profile = relationship("GuardrailProfile", foreign_keys=[guardrail_profile_id])
     members = relationship("User", secondary=team_members, back_populates="teams")
     api_keys = relationship("APIKey", back_populates="team")
     

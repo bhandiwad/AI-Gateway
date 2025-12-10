@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../api/client';
 import Header from '../components/Header';
+import GuardrailsDashboard from '../components/GuardrailsDashboard';
 import { 
   Shield, 
   AlertTriangle, 
@@ -19,7 +20,8 @@ import {
   ChevronRight,
   Layers,
   TestTube,
-  Globe
+  Globe,
+  BarChart3
 } from 'lucide-react';
 
 const PROVIDER_TYPES = [
@@ -296,6 +298,7 @@ export default function Guardrails() {
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Shield },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'profiles', label: 'Profiles', icon: Layers },
     { id: 'external', label: 'External Providers', icon: Globe },
     { id: 'templates', label: 'Templates', icon: Info },
@@ -383,6 +386,10 @@ export default function Guardrails() {
 
           {activeTab === 'overview' && (
             <OverviewTab guardrails={guardrails} getStatusIcon={getStatusIcon} getSeverityColor={getSeverityColor} />
+          )}
+
+          {activeTab === 'analytics' && (
+            <GuardrailsDashboard token={token} />
           )}
 
           {activeTab === 'profiles' && (

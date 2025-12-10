@@ -1,7 +1,7 @@
 import time
 import uuid
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -11,6 +11,7 @@ from backend.app.core.security import verify_api_key
 from backend.app.core.rate_limit import rate_limiter
 from backend.app.services.router_service import router_service
 from backend.app.services.guardrails_service import guardrails_service, GuardrailAction
+from backend.app.services.guardrail_resolver import guardrail_resolver
 from backend.app.services.tenancy_service import tenancy_service
 from backend.app.services.usage_service import usage_service
 from backend.app.schemas.chat import (
@@ -47,6 +48,7 @@ async def chat_completions(
     cache_hit = False
     content_category = None
     routing_decision = None
+    request_path = "/v1/chat/completions"
     
     rate_key = f"tenant:{tenant.id}"
     rate_limit = api_key.rate_limit_override or tenant.rate_limit
@@ -58,24 +60,14 @@ async def chat_completions(
             detail=f"Rate limit exceeded. Limit: {rate_limit}/minute"
         )
     
-    messages_dict = [msg.model_dump() for msg in request.messages]
-    
-    guardrail_result = guardrails_service.validate_request(
-        messages_dict,
-        tenant.id
+    allowed_models = guardrail_resolver.resolve_allowed_models(
+        db=db,
+        request_path=request_path,
+        api_key=api_key,
+        tenant=tenant
     )
     
-    if not guardrail_result.passed:
-        if settings.ENABLE_TELEMETRY:
-            from backend.app.telemetry import record_llm_metrics
-            record_llm_metrics(
-                model=request.model,
-                provider="blocked",
-                tenant_id=tenant.id,
-                status="blocked",
-                guardrail_triggered=guardrail_result.triggered_rule
-            )
-        
+    if allowed_models and request.model and request.model not in allowed_models:
         usage_service.log_usage(
             db=db,
             tenant_id=tenant.id,
@@ -85,14 +77,91 @@ async def chat_completions(
             model=request.model,
             provider="blocked",
             status="blocked",
-            error_message=guardrail_result.message,
-            guardrail_triggered=guardrail_result.triggered_rule,
-            guardrail_action=guardrail_result.action.value
+            error_message=f"Model '{request.model}' is not allowed for this API key/route"
         )
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=guardrail_result.message
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Model '{request.model}' is not allowed. Allowed models: {', '.join(allowed_models)}"
         )
+    
+    messages_dict = [msg.model_dump() for msg in request.messages]
+    
+    context = {
+        "department_id": api_key.department_id,
+        "team_id": api_key.team_id,
+        "api_key_tags": api_key.tags or [],
+        "environment": api_key.environment
+    }
+    
+    guardrail_profile = guardrail_resolver.resolve_profile(
+        db=db,
+        request_path=request_path,
+        api_key=api_key,
+        tenant=tenant,
+        context=context
+    )
+    
+    if guardrail_profile:
+        from backend.app.services.profile_guardrails_service import apply_profile_guardrails
+        profile_result = apply_profile_guardrails(
+            profile=guardrail_profile,
+            messages=messages_dict,
+            stage="request",
+            tenant_id=tenant.id
+        )
+        if not profile_result.passed:
+            usage_service.log_usage(
+                db=db,
+                tenant_id=tenant.id,
+                api_key_id=api_key.id,
+                request_id=request_id,
+                endpoint="chat/completions",
+                model=request.model,
+                provider="blocked",
+                status="blocked",
+                error_message=profile_result.message,
+                guardrail_triggered=profile_result.triggered_processor,
+                guardrail_action=profile_result.action
+            )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=profile_result.message
+            )
+        messages_dict = profile_result.processed_messages or messages_dict
+    else:
+        guardrail_result = guardrails_service.validate_request(
+            messages_dict,
+            tenant.id
+        )
+        
+        if not guardrail_result.passed:
+            if settings.ENABLE_TELEMETRY:
+                from backend.app.telemetry import record_llm_metrics
+                record_llm_metrics(
+                    model=request.model,
+                    provider="blocked",
+                    tenant_id=tenant.id,
+                    status="blocked",
+                    guardrail_triggered=guardrail_result.triggered_rule
+                )
+            
+            usage_service.log_usage(
+                db=db,
+                tenant_id=tenant.id,
+                api_key_id=api_key.id,
+                request_id=request_id,
+                endpoint="chat/completions",
+                model=request.model,
+                provider="blocked",
+                status="blocked",
+                error_message=guardrail_result.message,
+                guardrail_triggered=guardrail_result.triggered_rule,
+                guardrail_action=guardrail_result.action.value
+            )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=guardrail_result.message
+            )
     
     model_to_use = request.model
     

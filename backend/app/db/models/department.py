@@ -26,6 +26,10 @@ class Department(Base):
     
     manager_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     
+    guardrail_profile_id = Column(Integer, ForeignKey("guardrail_profiles.id"), nullable=True)
+    allowed_models = Column(JSON, default=list)
+    allowed_providers = Column(JSON, default=list)
+    
     metadata_ = Column("metadata", JSON, default=dict)
     
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -33,6 +37,7 @@ class Department(Base):
     
     tenant = relationship("Tenant", foreign_keys=[tenant_id])
     manager = relationship("User", foreign_keys=[manager_user_id])
+    guardrail_profile = relationship("GuardrailProfile", foreign_keys=[guardrail_profile_id])
     teams = relationship("Team", back_populates="department", cascade="all, delete-orphan")
     api_keys = relationship("APIKey", back_populates="department")
     
