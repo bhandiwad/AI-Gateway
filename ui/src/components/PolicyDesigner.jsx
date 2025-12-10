@@ -18,7 +18,7 @@ import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 
 const PROCESSOR_TYPES = [
-  { id: 'pii_detector', name: 'PII Detector', desc: 'Detects and redacts personal information', phase: 'request' },
+  { id: 'pii_detection', name: 'PII Detector', desc: 'Detects and redacts personal information', phase: 'request' },
   { id: 'toxicity_filter', name: 'Toxicity Filter', desc: 'Blocks harmful or offensive content', phase: 'both' },
   { id: 'prompt_injection', name: 'Prompt Injection Guard', desc: 'Prevents prompt injection attacks', phase: 'request' },
   { id: 'jailbreak_detector', name: 'Jailbreak Detector', desc: 'Detects attempts to bypass AI safety', phase: 'request' },
@@ -27,7 +27,18 @@ const PROCESSOR_TYPES = [
   { id: 'rate_limiter', name: 'Rate Limiter', desc: 'Enforces request rate limits', phase: 'request' },
   { id: 'content_filter', name: 'Content Filter', desc: 'Custom keyword filtering', phase: 'both' },
   { id: 'output_validator', name: 'Output Validator', desc: 'Validates response format', phase: 'response' },
-  { id: 'cost_guard', name: 'Cost Guard', desc: 'Limits token/cost per request', phase: 'request' }
+  { id: 'cost_guard', name: 'Cost Guard', desc: 'Limits token/cost per request', phase: 'request' },
+  { id: 'topic_filter', name: 'Topic Filter', desc: 'Block specific topics (medical, legal, financial)', phase: 'both' },
+  { id: 'bias_detection', name: 'Bias Detection', desc: 'Detect biased or discriminatory content', phase: 'response' },
+  { id: 'hallucination_check', name: 'Hallucination Check', desc: 'Detect potentially hallucinated responses', phase: 'response' },
+  { id: 'external_provider', name: 'External Provider', desc: 'Use external guardrails (OpenAI, AWS, Azure, Google)', phase: 'both', isExternal: true }
+];
+
+const EXTERNAL_PROVIDER_TYPES = [
+  { id: 'openai', name: 'OpenAI Moderation', desc: 'Hate, violence, self-harm, sexual content' },
+  { id: 'aws_comprehend', name: 'AWS Comprehend', desc: 'PII detection, sentiment, toxicity' },
+  { id: 'azure_content_safety', name: 'Azure Content Safety', desc: 'Hate, self-harm, sexual, violence' },
+  { id: 'google_nlp', name: 'Google Cloud NLP', desc: 'Sentiment, content classification' }
 ];
 
 export default function PolicyDesigner({ onProfileSelect }) {
@@ -136,17 +147,35 @@ export default function PolicyDesigner({ onProfileSelect }) {
     }
   };
 
+  const [externalProviderModal, setExternalProviderModal] = useState({ open: false, phase: null });
+  const [externalProviderConfig, setExternalProviderConfig] = useState({
+    provider_type: 'openai',
+    provider_name: '',
+    action: 'block'
+  });
+
   const addProcessor = (phase, processorType) => {
     if (!editingProfile) return;
 
     const processor = PROCESSOR_TYPES.find(p => p.id === processorType);
     if (!processor) return;
 
+    if (processor.isExternal) {
+      setExternalProviderModal({ open: true, phase });
+      setExternalProviderConfig({
+        provider_type: 'openai',
+        provider_name: '',
+        action: 'block'
+      });
+      return;
+    }
+
     const newProcessor = {
       id: `${processorType}-${Date.now()}`,
       type: processorType,
       name: processor.name,
       enabled: true,
+      action: 'block',
       config: {}
     };
 
@@ -161,6 +190,37 @@ export default function PolicyDesigner({ onProfileSelect }) {
         response_processors: [...(editingProfile.response_processors || []), newProcessor]
       });
     }
+  };
+
+  const addExternalProvider = () => {
+    if (!editingProfile || !externalProviderModal.phase) return;
+
+    const providerInfo = EXTERNAL_PROVIDER_TYPES.find(p => p.id === externalProviderConfig.provider_type);
+    const newProcessor = {
+      id: `external_provider-${Date.now()}`,
+      type: 'external_provider',
+      name: `External: ${providerInfo?.name || externalProviderConfig.provider_type}`,
+      enabled: true,
+      action: externalProviderConfig.action,
+      config: {
+        provider_type: externalProviderConfig.provider_type,
+        provider_name: externalProviderConfig.provider_name || externalProviderConfig.provider_type
+      }
+    };
+
+    if (externalProviderModal.phase === 'request') {
+      setEditingProfile({
+        ...editingProfile,
+        request_processors: [...(editingProfile.request_processors || []), newProcessor]
+      });
+    } else {
+      setEditingProfile({
+        ...editingProfile,
+        response_processors: [...(editingProfile.response_processors || []), newProcessor]
+      });
+    }
+
+    setExternalProviderModal({ open: false, phase: null });
   };
 
   const removeProcessor = (phase, processorId) => {
@@ -573,6 +633,85 @@ export default function PolicyDesigner({ onProfileSelect }) {
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
                 {saving ? 'Creating...' : 'Create Profile'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {externalProviderModal.open && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Add External Guardrail Provider</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Configure an external guardrails provider to add to the processor chain for the <span className="font-medium">{externalProviderModal.phase}</span> phase.
+            </p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Provider Type</label>
+                <select
+                  value={externalProviderConfig.provider_type}
+                  onChange={(e) => setExternalProviderConfig({ ...externalProviderConfig, provider_type: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500"
+                >
+                  {EXTERNAL_PROVIDER_TYPES.map(provider => (
+                    <option key={provider.id} value={provider.id}>
+                      {provider.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {EXTERNAL_PROVIDER_TYPES.find(p => p.id === externalProviderConfig.provider_type)?.desc}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Provider Name (optional)</label>
+                <input
+                  type="text"
+                  value={externalProviderConfig.provider_name}
+                  onChange={(e) => setExternalProviderConfig({ ...externalProviderConfig, provider_name: e.target.value })}
+                  placeholder="Custom name for this provider"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Leave empty to use the provider type as the name
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Action on Violation</label>
+                <select
+                  value={externalProviderConfig.action}
+                  onChange={(e) => setExternalProviderConfig({ ...externalProviderConfig, action: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500"
+                >
+                  <option value="block">Block - Reject the request</option>
+                  <option value="warn">Warn - Log and continue</option>
+                  <option value="allow">Allow - Monitor only</option>
+                </select>
+              </div>
+
+              <div className="bg-lime-50 border border-lime-200 rounded-lg p-3 text-sm">
+                <p className="text-gray-700">
+                  <strong>Note:</strong> Make sure you have configured the external provider credentials in the External Providers tab before using this processor.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setExternalProviderModal({ open: false, phase: null })}
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={addExternalProvider}
+                className="px-4 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700"
+              >
+                Add Provider
               </button>
             </div>
           </div>

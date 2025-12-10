@@ -305,3 +305,8 @@ class GuardrailProviderManager:
 
 # Global instance
 guardrail_provider_manager = GuardrailProviderManager()
+
+
+def get_provider_manager() -> GuardrailProviderManager:
+    """Get the global guardrail provider manager instance."""
+    return guardrail_provider_manager

@@ -3,12 +3,17 @@ Profile-Based Guardrails Service
 
 Applies guardrail processor chains defined in GuardrailProfile.
 Each profile contains ordered request_processors and response_processors.
+Supports both internal processors and external guardrail providers.
 """
 import re
+import asyncio
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 
 from backend.app.db.models.provider_config import GuardrailProfile
+import structlog
+
+logger = structlog.get_logger()
 
 
 @dataclass
@@ -69,7 +74,7 @@ def apply_profile_guardrails(
     """
     processors = profile.request_processors if stage == "request" else profile.response_processors
     
-    if not processors:
+    if processors is None or len(processors) == 0:
         return ProfileGuardrailResult(
             passed=True,
             message="No processors configured",
@@ -124,6 +129,7 @@ def _apply_processor(
         "rate_limiter": _process_rate_limiter,
         "hallucination_check": _process_hallucination_check,
         "bias_detection": _process_bias_detection,
+        "external_provider": _process_external_provider,
     }
     
     handler = processor_handlers.get(processor_type)
@@ -432,3 +438,199 @@ def _process_bias_detection(
         action="allow",
         processed_messages=messages
     )
+
+
+def _process_external_provider(
+    action: str,
+    config: Dict[str, Any],
+    messages: List[Dict[str, Any]],
+    tenant_id: int
+) -> ProfileGuardrailResult:
+    """
+    External guardrail provider processor.
+    
+    Calls configured external providers (OpenAI Moderation, AWS Comprehend, 
+    Azure Content Safety, Google Cloud NLP) as part of the processor chain.
+    
+    Config options:
+        - provider_id: ID of the external provider from guardrail_external_providers table
+        - provider_type: Type of provider (openai, aws_comprehend, azure_content_safety, google_nlp)
+        - provider_name: Name of the registered provider
+        - stage: "request" or "response" (default: both)
+        - categories: List of categories to check (optional, defaults to all)
+    """
+    provider_id = config.get("provider_id")
+    provider_type = config.get("provider_type")
+    provider_name = config.get("provider_name", "external")
+    categories = config.get("categories", [])
+    
+    if not provider_id and not provider_type:
+        logger.warning("external_provider_missing_config", config=config)
+        return ProfileGuardrailResult(
+            passed=True,
+            message="External provider not configured properly",
+            action="allow",
+            processed_messages=messages
+        )
+    
+    all_content = _get_all_content(messages)
+    
+    if not all_content.strip():
+        return ProfileGuardrailResult(
+            passed=True,
+            message="No content to check",
+            action="allow",
+            processed_messages=messages
+        )
+    
+    try:
+        result = _call_external_provider_sync(
+            provider_id=provider_id,
+            provider_type=provider_type,
+            provider_name=provider_name,
+            content=all_content,
+            categories=categories,
+            tenant_id=tenant_id
+        )
+        
+        if result.get("passed", True):
+            return ProfileGuardrailResult(
+                passed=True,
+                message=f"External provider ({provider_name}) check passed",
+                action="allow",
+                triggered_processor="external_provider",
+                processed_messages=messages,
+                metadata={
+                    "provider": provider_name,
+                    "provider_type": provider_type,
+                    "details": result
+                }
+            )
+        
+        violations = result.get("violations", [])
+        violation_summary = ", ".join([v.get("category", "unknown") for v in violations[:3]])
+        
+        if action == "block":
+            return ProfileGuardrailResult(
+                passed=False,
+                message=f"External provider ({provider_name}) detected violations: {violation_summary}",
+                action="block",
+                triggered_processor="external_provider",
+                metadata={
+                    "provider": provider_name,
+                    "provider_type": provider_type,
+                    "violations": violations
+                }
+            )
+        elif action == "warn":
+            return ProfileGuardrailResult(
+                passed=True,
+                message=f"External provider ({provider_name}) warning: {violation_summary}",
+                action="warn",
+                triggered_processor="external_provider",
+                processed_messages=messages,
+                metadata={
+                    "provider": provider_name,
+                    "provider_type": provider_type,
+                    "violations": violations
+                }
+            )
+        else:
+            return ProfileGuardrailResult(
+                passed=True,
+                message=f"External provider check completed",
+                action="allow",
+                triggered_processor="external_provider",
+                processed_messages=messages,
+                metadata={"provider": provider_name, "details": result}
+            )
+            
+    except Exception as e:
+        logger.error(
+            "external_provider_error",
+            provider_name=provider_name,
+            provider_type=provider_type,
+            error=str(e)
+        )
+        return ProfileGuardrailResult(
+            passed=True,
+            message=f"External provider check failed (allowing): {str(e)}",
+            action="allow",
+            triggered_processor="external_provider",
+            processed_messages=messages,
+            metadata={"error": str(e)}
+        )
+
+
+def _call_external_provider_sync(
+    provider_id: Optional[int],
+    provider_type: Optional[str],
+    provider_name: str,
+    content: str,
+    categories: List[str],
+    tenant_id: int
+) -> Dict[str, Any]:
+    """
+    Call external provider synchronously.
+    
+    For async contexts, use the async version or run in thread pool.
+    This function interfaces with the GuardrailProviderManager.
+    """
+    try:
+        from backend.app.services.guardrail_provider_manager import get_provider_manager
+        
+        manager = get_provider_manager()
+        
+        if not manager.providers:
+            logger.warning("no_external_providers_registered")
+            return {"passed": True, "message": "No external providers registered"}
+        
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            result = loop.run_until_complete(
+                manager.check_input(
+                    text=content,
+                    context={"tenant_id": tenant_id, "categories": categories},
+                    providers=[provider_name] if provider_name in manager.providers else None
+                )
+            )
+            
+            return {
+                "passed": result.passed,
+                "violations": [
+                    {
+                        "category": v.category.value if hasattr(v.category, 'value') else str(v.category),
+                        "severity": v.severity,
+                        "confidence": v.confidence,
+                        "message": v.message,
+                        "action": v.suggested_action.value if hasattr(v.suggested_action, 'value') else str(v.suggested_action)
+                    }
+                    for v in result.violations
+                ],
+                "recommended_action": result.recommended_action.value if hasattr(result.recommended_action, 'value') else str(result.recommended_action),
+                "processing_time_ms": result.processing_time_ms
+            }
+        finally:
+            loop.close()
+            
+    except ImportError as e:
+        logger.warning("guardrail_provider_manager_not_available", error=str(e))
+        return {"passed": True, "message": "Provider manager not available"}
+    except Exception as e:
+        logger.error("external_provider_call_failed", error=str(e))
+        raise
+
+
+async def apply_profile_guardrails_async(
+    profile: GuardrailProfile,
+    messages: List[Dict[str, Any]],
+    stage: str,
+    tenant_id: int
+) -> ProfileGuardrailResult:
+    """
+    Async version of apply_profile_guardrails.
+    
+    Use this when calling from async context (FastAPI routes).
+    """
+    return apply_profile_guardrails(profile, messages, stage, tenant_id)
