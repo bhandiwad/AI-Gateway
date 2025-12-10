@@ -79,6 +79,45 @@ External guardrail providers (OpenAI Moderation, AWS Comprehend, Azure Content S
 ### Runtime Model Enforcement
 API routes can define `allowed_models` list. The chat completion endpoint (`routes_chat.py`) enforces this at runtime, rejecting requests for disallowed models with HTTP 403.
 
+### Granular Budget Policy System
+The budget policy system (`backend/app/services/budget_enforcement_service.py`) provides fine-grained cost control:
+
+#### Budget Scopes (Most to Least Specific)
+1. **Model**: Per-model spending limits (e.g., "$100/month on GPT-4")
+2. **Route**: Per-API-route spending limits
+3. **API Key**: Per-key spending limits
+4. **User**: Per-user spending limits
+5. **Team**: Per-team spending limits
+6. **Department**: Per-department spending limits
+7. **Tenant**: Tenant-wide spending limits
+8. **Global**: System-wide spending limits
+
+#### Key Features
+- **Disabled by Default**: All budget policies are created with `enabled=false` - must be explicitly enabled
+- **Hierarchical Resolution**: Checks from most specific scope to least specific, stopping at first enabled policy
+- **Runtime Enforcement**: Integrated into chat completion endpoint, returns HTTP 402 when budget exceeded
+- **Model Overrides**: Each policy can have model-specific limit overrides
+- **Alert Thresholds**: Configurable warning thresholds (e.g., alert at 80% utilization)
+- **Period Support**: Daily, weekly, monthly, or yearly budget periods
+
+#### Database Models
+- `BudgetPolicy`: Stores policy configuration (scope, limit, period, enabled flag)
+- `BudgetUsageSnapshot`: Tracks current spend per policy for quick lookups
+
+#### API Endpoints
+- `GET /api/v1/budgets`: List all budget policies
+- `POST /api/v1/budgets`: Create new budget policy
+- `PUT /api/v1/budgets/{id}`: Update budget policy
+- `DELETE /api/v1/budgets/{id}`: Delete budget policy
+- `POST /api/v1/budgets/{id}/toggle`: Enable/disable budget policy
+
+#### UI Component
+The `BudgetPolicies` component in the Billing page provides:
+- Policy creation with scope/limit/period configuration
+- Real-time utilization display with progress bars
+- Enable/disable toggle for each policy
+- Edit and delete functionality
+
 ## External Dependencies
 
 -   **AI Providers**: OpenAI, Anthropic, Gemini (integrated via LiteLLM)
