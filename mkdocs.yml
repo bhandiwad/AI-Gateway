@@ -108,6 +108,7 @@ nav:
     - AWS: deploy/aws.md
     - Google Cloud: deploy/gcp.md
     - Azure: deploy/azure.md
+    - Docs Configuration: deploy/docs-configuration.md
   
   - Knowledge base:
     - knowledge-base/index.md
