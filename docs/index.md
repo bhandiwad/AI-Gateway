@@ -1,6 +1,6 @@
-# AI Gateway Documentation
+# InfinitAI Gateway Documentation
 
-Welcome to AI Gateway - an enterprise-grade API gateway for AI/LLM services.
+Welcome to InfinitAI Gateway - an enterprise-grade API gateway for AI/LLM services.
 
 ---
 

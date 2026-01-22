@@ -1,21 +1,23 @@
-site_name: AI Gateway
+site_name: InfinitAI Gateway
 site_description: Enterprise AI Gateway with multi-provider routing, guardrails, and usage tracking
-site_url: https://docs.ai-gateway.io
-repo_url: https://github.com/your-org/ai-gateway
-repo_name: your-org/ai-gateway
+site_url: https://docs.infinitai.io
+repo_url: https://github.com/infinitai/ai-gateway
+repo_name: infinitai/ai-gateway
 
 theme:
   name: material
+  logo: assets/logo.png
+  favicon: assets/logo.png
   palette:
     - scheme: default
-      primary: deep purple
-      accent: deep purple
+      primary: custom
+      accent: lime
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - scheme: slate
-      primary: deep purple
-      accent: deep purple
+      primary: custom
+      accent: lime
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
@@ -62,9 +64,10 @@ markdown_extensions:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/your-org/ai-gateway
-    - icon: fontawesome/brands/twitter
-      link: https://twitter.com/aigateway
+      link: https://github.com/infinitai/ai-gateway
+
+extra_css:
+  - assets/extra.css
 
 nav:
   - Home: index.md
