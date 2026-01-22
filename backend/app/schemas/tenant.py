@@ -24,7 +24,7 @@ class TenantUpdate(BaseModel):
     default_provider_id: Optional[int] = None
     cost_ceiling_daily: Optional[float] = None
     cost_ceiling_monthly: Optional[float] = None
-    logging_policy: Optional[str] = None
+    logging_policy: Optional[Dict[str, Any]] = None
 
 
 class TenantResponse(TenantBase):
@@ -40,7 +40,7 @@ class TenantResponse(TenantBase):
     default_provider_id: Optional[int] = None
     cost_ceiling_daily: Optional[float] = None
     cost_ceiling_monthly: Optional[float] = None
-    logging_policy: Optional[str] = None
+    logging_policy: Optional[Dict[str, Any]] = None
     created_at: datetime
     updated_at: datetime
     

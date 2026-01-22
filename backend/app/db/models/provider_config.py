@@ -79,6 +79,7 @@ class APIRoute(Base):
     description = Column(Text, nullable=True)
     
     is_active = Column(Boolean, default=True)
+    priority = Column(Integer, default=0)
     
     policy_id = Column(Integer, ForeignKey("routing_policies.id"), nullable=True)
     

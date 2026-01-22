@@ -1,0 +1,111 @@
+site_name: AI Gateway
+site_description: Enterprise AI Gateway with multi-provider routing, guardrails, and usage tracking
+site_url: https://docs.ai-gateway.io
+repo_url: https://github.com/your-org/ai-gateway
+repo_name: your-org/ai-gateway
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: deep purple
+      accent: deep purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: deep purple
+      accent: deep purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.indexes
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+    - content.code.copy
+    - content.code.annotate
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search
+  - tags
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/your-org/ai-gateway
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/aigateway
+
+nav:
+  - Home: index.md
+  
+  - Get started:
+    - get-started/index.md
+    - Installation: get-started/installation.md
+    - Quickstart: get-started/quickstart.md
+    - Main concepts: get-started/concepts.md
+  
+  - Develop:
+    - develop/index.md
+    - API Reference:
+      - develop/api-reference/index.md
+      - Chat Completions: develop/api-reference/chat.md
+      - Authentication: develop/api-reference/auth.md
+      - API Keys: develop/api-reference/api-keys.md
+      - Guardrails: develop/api-reference/guardrails.md
+      - Router: develop/api-reference/router.md
+      - Tenants: develop/api-reference/tenants.md
+      - Users: develop/api-reference/users.md
+      - Usage: develop/api-reference/usage.md
+      - Audit: develop/api-reference/audit.md
+    - Concepts:
+      - develop/concepts/index.md
+      - Guardrails: develop/concepts/guardrails.md
+      - Routing: develop/concepts/routing.md
+      - SSO: develop/concepts/sso.md
+      - Rate Limiting: develop/concepts/rate-limiting.md
+      - Configuration: develop/concepts/configuration.md
+  
+  - Deploy:
+    - deploy/index.md
+    - Docker: deploy/docker.md
+    - Kubernetes: deploy/kubernetes.md
+    - AWS: deploy/aws.md
+    - Google Cloud: deploy/gcp.md
+    - Azure: deploy/azure.md
+  
+  - Knowledge base:
+    - knowledge-base/index.md
+    - FAQ: knowledge-base/faq.md
+    - Troubleshooting: knowledge-base/troubleshooting.md
+    - Security FAQ: knowledge-base/security-faq.md

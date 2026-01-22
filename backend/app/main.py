@@ -65,6 +65,11 @@ async def lifespan(app: FastAPI):
         await semantic_cache.init_redis()
         logger.info("Semantic cache initialized")
     
+    # Initialize API key cache (PERFORMANCE OPTIMIZATION)
+    from backend.app.core.api_key_cache import api_key_cache
+    await api_key_cache.init_redis()
+    logger.info("API key cache initialized")
+    
     yield
     
     if settings.ENABLE_TELEMETRY:
@@ -91,6 +96,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add performance monitoring middleware (OPTIMIZATION)
+from backend.app.middleware.performance_monitor import PerformanceMonitorMiddleware
+app.add_middleware(PerformanceMonitorMiddleware, slow_request_threshold_ms=100)
 
 if settings.ENABLE_TELEMETRY:
     from backend.app.telemetry import TelemetryMiddleware

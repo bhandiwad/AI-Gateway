@@ -11,10 +11,13 @@ from backend.app.core.security import verify_api_key
 from backend.app.core.rate_limit import rate_limiter
 from backend.app.services.router_service import router_service
 from backend.app.services.guardrails_service import guardrails_service, GuardrailAction
+from backend.app.services.guardrails_service_async import async_guardrails_service
 from backend.app.services.guardrail_resolver import guardrail_resolver
 from backend.app.services.tenancy_service import tenancy_service
 from backend.app.services.usage_service import usage_service
 from backend.app.services.budget_enforcement_service import BudgetEnforcementService
+from backend.app.core.api_key_cache import api_key_cache
+from backend.app.core.security import hash_api_key
 from backend.app.schemas.chat import (
     ChatCompletionRequest, ChatCompletionResponse,
     EmbeddingRequest, EmbeddingResponse,
@@ -28,7 +31,10 @@ async def get_tenant_from_api_key(
     api_key: str = Depends(verify_api_key),
     db: Session = Depends(get_db)
 ):
-    result = tenancy_service.validate_api_key(db, api_key)
+    # OPTIMIZATION: Use cached API key validation
+    api_key_hash = hash_api_key(api_key)
+    result = await api_key_cache.get_tenant_and_key(db, api_key_hash)
+    
     if not result:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

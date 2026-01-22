@@ -10,7 +10,8 @@ Resolves the appropriate guardrail profile based on:
 6. System default (None - uses legacy guardrails_service)
 """
 from typing import Optional, Dict, Any, List
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
+import structlog
 
 from backend.app.db.models.provider_config import GuardrailProfile, RoutingPolicy, APIRoute
 from backend.app.db.models.api_key import APIKey
@@ -19,8 +20,14 @@ from backend.app.db.models.department import Department
 from backend.app.db.models.team import Team
 
 
+logger = structlog.get_logger()
+
+
 class GuardrailResolver:
     """Hierarchical guardrail profile resolution with selector matching."""
+    
+    def __init__(self):
+        self._route_cache = {}  # Cache for route lookups
     
     def resolve_profile(
         self,
@@ -57,38 +64,34 @@ class GuardrailResolver:
         context.setdefault("team_id", api_key.team_id)
         context.setdefault("api_key_tags", api_key.tags or [])
         
+        # OPTIMIZATION: Eager load ALL relationships in ONE query
+        api_key_full = db.query(APIKey).options(
+            joinedload(APIKey.guardrail_profile),
+            joinedload(APIKey.team).joinedload(Team.guardrail_profile),
+            joinedload(APIKey.department).joinedload(Department.guardrail_profile)
+        ).filter(APIKey.id == api_key.id).first()
+        
+        if not api_key_full:
+            return None
+        
+        # 1. Route-based resolution
         profile = self._resolve_from_route(db, request_path, tenant.id, context)
         if profile:
             return profile
         
-        if api_key.guardrail_profile_id:
-            profile = db.query(GuardrailProfile).filter(
-                GuardrailProfile.id == api_key.guardrail_profile_id,
-                GuardrailProfile.is_active == True
-            ).first()
-            if profile:
-                return profile
+        # 2. API Key override (already loaded)
+        if api_key_full.guardrail_profile:
+            return api_key_full.guardrail_profile
         
-        if api_key.team_id:
-            team = db.query(Team).filter(Team.id == api_key.team_id).first()
-            if team and team.guardrail_profile_id:
-                profile = db.query(GuardrailProfile).filter(
-                    GuardrailProfile.id == team.guardrail_profile_id,
-                    GuardrailProfile.is_active == True
-                ).first()
-                if profile:
-                    return profile
+        # 3. Team default (already loaded)
+        if api_key_full.team and api_key_full.team.guardrail_profile:
+            return api_key_full.team.guardrail_profile
         
-        if api_key.department_id:
-            dept = db.query(Department).filter(Department.id == api_key.department_id).first()
-            if dept and dept.guardrail_profile_id:
-                profile = db.query(GuardrailProfile).filter(
-                    GuardrailProfile.id == dept.guardrail_profile_id,
-                    GuardrailProfile.is_active == True
-                ).first()
-                if profile:
-                    return profile
+        # 4. Department default (already loaded)
+        if api_key_full.department and api_key_full.department.guardrail_profile:
+            return api_key_full.department.guardrail_profile
         
+        # 5. Tenant default
         if tenant.guardrail_profile_id:
             profile = db.query(GuardrailProfile).filter(
                 GuardrailProfile.id == tenant.guardrail_profile_id,
@@ -114,7 +117,10 @@ class GuardrailResolver:
         if not route.policy_id:
             return None
         
-        policy = db.query(RoutingPolicy).filter(
+        # OPTIMIZATION: Eager load policy with profile
+        policy = db.query(RoutingPolicy).options(
+            joinedload(RoutingPolicy.profile)
+        ).filter(
             RoutingPolicy.id == route.policy_id,
             RoutingPolicy.is_active == True
         ).first()
@@ -128,10 +134,11 @@ class GuardrailResolver:
         if not policy.profile_id:
             return None
         
-        return db.query(GuardrailProfile).filter(
-            GuardrailProfile.id == policy.profile_id,
-            GuardrailProfile.is_active == True
-        ).first()
+        # Profile already loaded via joinedload
+        if policy.profile and policy.profile.is_active:
+            return policy.profile
+        
+        return None
     
     def _match_route(
         self,
@@ -258,15 +265,20 @@ class GuardrailResolver:
         if api_key.allowed_models_override:
             return api_key.allowed_models_override
         
-        if api_key.team_id:
-            team = db.query(Team).filter(Team.id == api_key.team_id).first()
-            if team and team.allowed_models:
-                return team.allowed_models
+        # OPTIMIZATION: Eager load relationships
+        api_key_full = db.query(APIKey).options(
+            joinedload(APIKey.team),
+            joinedload(APIKey.department)
+        ).filter(APIKey.id == api_key.id).first()
         
-        if api_key.department_id:
-            dept = db.query(Department).filter(Department.id == api_key.department_id).first()
-            if dept and dept.allowed_models:
-                return dept.allowed_models
+        if not api_key_full:
+            return None
+        
+        if api_key_full.team and api_key_full.team.allowed_models:
+            return api_key_full.team.allowed_models
+        
+        if api_key_full.department and api_key_full.department.allowed_models:
+            return api_key_full.department.allowed_models
         
         if tenant.allowed_models:
             return tenant.allowed_models
@@ -296,15 +308,20 @@ class GuardrailResolver:
         if api_key.allowed_providers_override:
             return api_key.allowed_providers_override
         
-        if api_key.team_id:
-            team = db.query(Team).filter(Team.id == api_key.team_id).first()
-            if team and team.allowed_providers:
-                return team.allowed_providers
+        # OPTIMIZATION: Eager load relationships
+        api_key_full = db.query(APIKey).options(
+            joinedload(APIKey.team),
+            joinedload(APIKey.department)
+        ).filter(APIKey.id == api_key.id).first()
         
-        if api_key.department_id:
-            dept = db.query(Department).filter(Department.id == api_key.department_id).first()
-            if dept and dept.allowed_providers:
-                return dept.allowed_providers
+        if not api_key_full:
+            return None
+        
+        if api_key_full.team and api_key_full.team.allowed_providers:
+            return api_key_full.team.allowed_providers
+        
+        if api_key_full.department and api_key_full.department.allowed_providers:
+            return api_key_full.department.allowed_providers
         
         if hasattr(tenant, 'allowed_providers') and tenant.allowed_providers:
             return tenant.allowed_providers

@@ -15,6 +15,7 @@ COPY backend/ ./backend/
 COPY backend/configs/ ./configs/
 
 ENV PYTHONPATH=/app
+ENV PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 8000
 
