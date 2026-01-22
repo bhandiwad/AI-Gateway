@@ -1,6 +1,8 @@
 site_name: InfinitAI Gateway
 site_description: Enterprise AI Gateway with multi-provider routing, guardrails, and usage tracking
-site_url: https://docs.infinitai.io
+# For /docs path: use your domain + /docs (e.g., https://app.infinitai.io/docs)
+# For subdomain: use docs.yourdomain.com (e.g., https://docs.infinitai.io)
+site_url: https://app.infinitai.io/docs
 repo_url: https://github.com/infinitai/ai-gateway
 repo_name: infinitai/ai-gateway
 

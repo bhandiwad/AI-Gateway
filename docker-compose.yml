@@ -35,8 +35,9 @@ services:
 
   docs:
     image: squidfunk/mkdocs-material:latest
-    ports:
-      - "8080:8000"
+    # Uncomment to expose docs on separate port (default: proxied via /docs)
+    # ports:
+    #   - "8080:8000"
     volumes:
       - ./docs:/docs/docs:ro
       - ./mkdocs.yml:/docs/mkdocs.yml:ro
