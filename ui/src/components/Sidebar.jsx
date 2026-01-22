@@ -13,7 +13,8 @@ import {
   Shield,
   GitBranch,
   Building2,
-  Bell
+  Bell,
+  BookOpen
 } from 'lucide-react';
 import { useAuth, PERMISSIONS } from '../contexts/AuthContext';
 import InfinitAILogo from './InfinitAILogo';
@@ -119,6 +120,15 @@ export default function Sidebar({ onNavClick }) {
             )}
           </div>
         </div>
+        <a
+          href={window.location.port === '80' || window.location.port === '' ? `${window.location.protocol}//${window.location.hostname}:8080` : '/docs/'}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 w-full px-4 py-3 text-sm text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors min-h-[44px] mb-2"
+        >
+          <BookOpen size={18} />
+          <span>Documentation</span>
+        </a>
         <button
           onClick={handleLogout}
           className="flex items-center gap-2 w-full px-4 py-3 text-sm text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors min-h-[44px]"

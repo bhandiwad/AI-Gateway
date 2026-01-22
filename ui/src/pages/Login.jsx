@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, Shield } from 'lucide-react';
+import { Loader2, Shield, BookOpen } from 'lucide-react';
 import axios from 'axios';
 import InfinitAILogo from '../components/InfinitAILogo';
 
@@ -194,6 +194,18 @@ export default function Login() {
             Sign up
           </Link>
         </p>
+
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <a
+            href={window.location.port === '80' || window.location.port === '' ? `${window.location.protocol}//${window.location.hostname}:8080` : '/docs/'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full py-2 text-sm text-gray-500 hover:text-lime-600 transition-colors"
+          >
+            <BookOpen size={16} />
+            <span>Documentation</span>
+          </a>
+        </div>
       </div>
     </div>
   );
