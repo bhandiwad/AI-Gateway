@@ -6,6 +6,29 @@
   --md-accent-fg-color: #C0CA33;
 }
 
+/* Back to App Banner */
+.back-to-app-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #558B2F 0%, #7CB342 100%);
+  color: white !important;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.back-to-app-banner:hover {
+  background: linear-gradient(135deg, #33691E 0%, #558B2F 100%);
+}
+
+.back-to-app-icon {
+  font-size: 1.1rem;
+}
+
 [data-md-color-scheme="slate"] {
   --md-primary-fg-color: #9CCC65;
   --md-primary-fg-color--light: #C5E1A5;

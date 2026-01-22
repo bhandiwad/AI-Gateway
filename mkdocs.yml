@@ -8,6 +8,7 @@ repo_name: infinitai/ai-gateway
 
 theme:
   name: material
+  custom_dir: docs/overrides
   logo: assets/logo.png
   favicon: assets/logo.png
   palette:
@@ -64,7 +65,11 @@ markdown_extensions:
       permalink: true
 
 extra:
+  homepage: /
   social:
+    - icon: fontawesome/solid/arrow-left
+      link: /
+      name: Back to App
     - icon: fontawesome/brands/github
       link: https://github.com/infinitai/ai-gateway
 
