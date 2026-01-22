@@ -113,6 +113,7 @@ nav:
     - AWS: deploy/aws.md
     - Google Cloud: deploy/gcp.md
     - Azure: deploy/azure.md
+    - HashiCorp Vault: deploy/vault.md
     - Docs Configuration: deploy/docs-configuration.md
   
   - Knowledge base:

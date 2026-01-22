@@ -24,6 +24,14 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
     ANTHROPIC_API_KEY: Optional[str] = os.getenv("ANTHROPIC_API_KEY")
     
+    # Vault Configuration
+    VAULT_ENABLED: bool = os.getenv("VAULT_ENABLED", "false").lower() == "true"
+    VAULT_ADDR: Optional[str] = os.getenv("VAULT_ADDR")
+    VAULT_TOKEN: Optional[str] = os.getenv("VAULT_TOKEN")
+    VAULT_ROLE_ID: Optional[str] = os.getenv("VAULT_ROLE_ID")
+    VAULT_SECRET_ID: Optional[str] = os.getenv("VAULT_SECRET_ID")
+    VAULT_SECRET_PATH: str = os.getenv("VAULT_SECRET_PATH", "ai-gateway")
+    
     ENABLE_GUARDRAILS: bool = True
     ENABLE_RATE_LIMITING: bool = True
     ENABLE_USAGE_LOGGING: bool = True

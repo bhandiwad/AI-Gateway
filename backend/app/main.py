@@ -44,6 +44,14 @@ logger = structlog.get_logger()
 async def lifespan(app: FastAPI):
     logger.info("Starting AI Gateway...")
     
+    # Initialize secrets manager (Vault or env fallback)
+    from backend.app.core.secrets import secrets_manager
+    await secrets_manager.initialize()
+    if secrets_manager.is_vault_enabled:
+        logger.info("Vault secrets manager initialized")
+    else:
+        logger.info("Using environment variables for secrets")
+    
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables created")
     
