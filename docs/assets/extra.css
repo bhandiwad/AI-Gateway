@@ -6,27 +6,25 @@
   --md-accent-fg-color: #C0CA33;
 }
 
-/* Back to App Banner */
-.back-to-app-banner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, #558B2F 0%, #7CB342 100%);
+/* Back to App Link */
+.md-banner {
+  background: var(--md-primary-fg-color--dark);
+  padding: 0.3rem 0;
+}
+
+.back-to-app-link {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
   color: white !important;
   text-decoration: none;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   font-weight: 500;
-  transition: background 0.2s;
+  border-radius: 3px;
+  transition: opacity 0.2s;
 }
 
-.back-to-app-banner:hover {
-  background: linear-gradient(135deg, #33691E 0%, #558B2F 100%);
-}
-
-.back-to-app-icon {
-  font-size: 1.1rem;
+.back-to-app-link:hover {
+  opacity: 0.8;
 }
 
 [data-md-color-scheme="slate"] {

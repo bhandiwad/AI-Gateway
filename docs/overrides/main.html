@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 
 {% block announce %}
-<a href="/" class="back-to-app-banner">
-  <span class="back-to-app-icon">←</span>
-  <span>Back to InfinitAI Gateway</span>
+<a id="back-to-app" href="#" class="back-to-app-link">
+  ← App
 </a>
+<script>
+  document.getElementById('back-to-app').href = window.location.protocol + '//' + window.location.hostname;
+</script>
 {% endblock %}
