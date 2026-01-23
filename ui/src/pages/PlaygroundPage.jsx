@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { modelsApi, apiKeysApi } from '../api/client';
 import Header from '../components/Header';
 import PlaygroundChat from '../components/Playground';
@@ -56,13 +57,13 @@ export default function PlaygroundPage() {
                   <AlertCircle className="mx-auto text-amber-500 mb-4" size={48} />
                   <h3 className="text-lg font-semibold text-gray-800 mb-2">No API Keys Found</h3>
                   <p className="text-gray-500 mb-4">Create an API key to use the playground</p>
-                  <a
-                    href="/api-keys"
+                  <Link
+                    to="/api-keys"
                     className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                   >
                     <Key size={18} />
                     Create API Key
-                  </a>
+                  </Link>
                 </div>
               </div>
             ) : (
