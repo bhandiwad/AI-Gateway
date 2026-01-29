@@ -192,7 +192,7 @@ export default function ApiKeys() {
             </p>
             <button
               onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+              className="flex items-center gap-2 px-4 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700"
             >
               <Plus size={18} />
               Create New Key
@@ -411,7 +411,7 @@ export default function ApiKeys() {
                     <button
                       type="submit"
                       disabled={creating || !formData.name.trim()}
-                      className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50"
+                      className="px-4 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700 disabled:opacity-50"
                     >
                       {creating ? 'Creating...' : 'Create API Key'}
                     </button>
