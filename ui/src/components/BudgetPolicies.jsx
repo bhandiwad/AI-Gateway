@@ -161,7 +161,7 @@ export default function BudgetPolicies() {
       case 'critical': return 'bg-red-400';
       case 'warning': return 'bg-amber-500';
       case 'soft': return 'bg-yellow-400';
-      default: return 'bg-lime-500';
+      default: return 'bg-blue-500';
     }
   };
 
@@ -179,7 +179,7 @@ export default function BudgetPolicies() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-lime-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -193,7 +193,7 @@ export default function BudgetPolicies() {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
           <Plus size={18} />
           Add Policy
@@ -225,12 +225,12 @@ export default function BudgetPolicies() {
               return (
                 <div 
                   key={policy.id} 
-                  className={`border rounded-lg p-4 ${policy.enabled ? 'border-lime-200 bg-lime-50/30' : 'border-gray-200 bg-gray-50'}`}
+                  className={`border rounded-lg p-4 ${policy.enabled ? 'border-blue-200 bg-blue-50/30' : 'border-gray-200 bg-gray-50'}`}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3">
-                      <div className={`p-2 rounded-lg ${policy.enabled ? 'bg-lime-100' : 'bg-gray-100'}`}>
-                        <ScopeIcon size={20} className={policy.enabled ? 'text-lime-600' : 'text-gray-400'} />
+                      <div className={`p-2 rounded-lg ${policy.enabled ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                        <ScopeIcon size={20} className={policy.enabled ? 'text-blue-600' : 'text-gray-400'} />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
@@ -254,7 +254,7 @@ export default function BudgetPolicies() {
                         onClick={() => togglePolicy(policy.id)}
                         className={`p-2 rounded-lg transition-colors ${
                           policy.enabled 
-                            ? 'text-lime-600 hover:bg-lime-100' 
+                            ? 'text-blue-600 hover:bg-blue-100' 
                             : 'text-gray-400 hover:bg-gray-100'
                         }`}
                         title={policy.enabled ? 'Disable policy' : 'Enable policy'}
@@ -327,7 +327,7 @@ export default function BudgetPolicies() {
                   value={newPolicy.name}
                   onChange={(e) => setNewPolicy({ ...newPolicy, name: e.target.value })}
                   placeholder="e.g., GPT-4 Monthly Limit"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -338,7 +338,7 @@ export default function BudgetPolicies() {
                   value={newPolicy.description}
                   onChange={(e) => setNewPolicy({ ...newPolicy, description: e.target.value })}
                   placeholder="Optional description"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -348,11 +348,22 @@ export default function BudgetPolicies() {
                   <select
                     value={newPolicy.scope_type}
                     onChange={(e) => setNewPolicy({ ...newPolicy, scope_type: e.target.value, scope_id: null })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
-                    {scopeOptions?.scopes?.map(scope => (
-                      <option key={scope.type} value={scope.type}>{scope.name}</option>
-                    ))}
+                    {scopeOptions?.scopes?.length > 0 ? (
+                      scopeOptions.scopes.map(scope => (
+                        <option key={scope.type} value={scope.type}>{scope.name}</option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="tenant">Organization</option>
+                        <option value="department">Department</option>
+                        <option value="team">Team</option>
+                        <option value="user">User</option>
+                        <option value="api_key">API Key</option>
+                        <option value="model">Model</option>
+                      </>
+                    )}
                   </select>
                 </div>
                 <div>
@@ -360,11 +371,20 @@ export default function BudgetPolicies() {
                   <select
                     value={newPolicy.period}
                     onChange={(e) => setNewPolicy({ ...newPolicy, period: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
-                    {scopeOptions?.periods?.map(p => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
+                    {scopeOptions?.periods?.length > 0 ? (
+                      scopeOptions.periods.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                      </>
+                    )}
                   </select>
                 </div>
               </div>
@@ -377,7 +397,7 @@ export default function BudgetPolicies() {
                   <select
                     value={newPolicy.scope_id || ''}
                     onChange={(e) => setNewPolicy({ ...newPolicy, scope_id: e.target.value ? parseInt(e.target.value) : null })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">All {SCOPE_LABELS[newPolicy.scope_type]}s</option>
                     {scopeOptions.scopes.find(s => s.type === newPolicy.scope_type)?.options?.map(opt => (
@@ -394,7 +414,7 @@ export default function BudgetPolicies() {
                   value={newPolicy.model_filter}
                   onChange={(e) => setNewPolicy({ ...newPolicy, model_filter: e.target.value })}
                   placeholder="e.g., gpt-4, claude-3-opus"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">Leave empty to apply to all models</p>
               </div>
@@ -409,7 +429,7 @@ export default function BudgetPolicies() {
                     placeholder="e.g., 100"
                     min="0"
                     step="0.01"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -417,11 +437,20 @@ export default function BudgetPolicies() {
                   <select
                     value={newPolicy.action_on_limit}
                     onChange={(e) => setNewPolicy({ ...newPolicy, action_on_limit: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
-                    {scopeOptions?.actions?.map(a => (
-                      <option key={a.id} value={a.id}>{a.name}</option>
-                    ))}
+                    {scopeOptions?.actions?.length > 0 ? (
+                      scopeOptions.actions.map(a => (
+                        <option key={a.id} value={a.id}>{a.name}</option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="block">Block Requests</option>
+                        <option value="warn">Warn Only</option>
+                        <option value="throttle">Throttle Requests</option>
+                        <option value="notify">Notify Admin</option>
+                      </>
+                    )}
                   </select>
                 </div>
               </div>
@@ -437,7 +466,7 @@ export default function BudgetPolicies() {
                       onChange={(e) => setNewPolicy({ ...newPolicy, soft_threshold_pct: parseInt(e.target.value) })}
                       min="0"
                       max="100"
-                      className="w-full px-3 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-lime-500 text-sm"
+                      className="w-full px-3 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
                     />
                   </div>
                   <div>
@@ -448,7 +477,7 @@ export default function BudgetPolicies() {
                       onChange={(e) => setNewPolicy({ ...newPolicy, warning_threshold_pct: parseInt(e.target.value) })}
                       min="0"
                       max="100"
-                      className="w-full px-3 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-lime-500 text-sm"
+                      className="w-full px-3 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
                     />
                   </div>
                   <div>
@@ -459,7 +488,7 @@ export default function BudgetPolicies() {
                       onChange={(e) => setNewPolicy({ ...newPolicy, critical_threshold_pct: parseInt(e.target.value) })}
                       min="0"
                       max="100"
-                      className="w-full px-3 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-lime-500 text-sm"
+                      className="w-full px-3 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
                     />
                   </div>
                 </div>
@@ -470,7 +499,7 @@ export default function BudgetPolicies() {
                   type="checkbox"
                   checked={newPolicy.enabled}
                   onChange={(e) => setNewPolicy({ ...newPolicy, enabled: e.target.checked })}
-                  className="w-4 h-4 rounded border-gray-300 text-lime-600 focus:ring-lime-500"
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <span className="text-sm text-gray-700">Enable policy immediately</span>
               </label>
@@ -486,7 +515,7 @@ export default function BudgetPolicies() {
               <button
                 onClick={createPolicy}
                 disabled={saving || !newPolicy.name || !newPolicy.hard_limit_usd}
-                className="px-4 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700 disabled:opacity-50"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
                 {saving ? 'Creating...' : 'Create Policy'}
               </button>

@@ -31,7 +31,7 @@ function OverviewTab({ stats, loading, user, formatNumber, formatCurrency }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-lime-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -44,7 +44,7 @@ function OverviewTab({ stats, loading, user, formatNumber, formatCurrency }) {
           label="Total Requests"
           value={formatNumber(stats?.total_requests)}
           subvalue={stats?.period}
-          color="bg-lime-500"
+          color="bg-blue-500"
         />
         <StatCard
           icon={Zap}
@@ -116,22 +116,24 @@ function OverviewTab({ stats, loading, user, formatNumber, formatCurrency }) {
               <span className="text-sm text-gray-500">Rate Limit</span>
               <span className="font-medium text-sm">{user?.rate_limit} req/min</span>
             </div>
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-sm text-gray-500">Budget Usage</span>
-                <span className="font-medium text-sm">
-                  {formatCurrency(user?.current_spend)} / {formatCurrency(user?.monthly_budget)}
-                </span>
+            {user?.monthly_budget > 0 && (
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm text-gray-500">Budget Usage</span>
+                  <span className="font-medium text-sm">
+                    {formatCurrency(user?.current_spend)} / {formatCurrency(user?.monthly_budget)}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-500 h-2 rounded-full"
+                    style={{
+                      width: `${Math.min(100, (user?.current_spend / user?.monthly_budget) * 100)}%`
+                    }}
+                  ></div>
+                </div>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-lime-500 h-2 rounded-full"
-                  style={{
-                    width: `${Math.min(100, (user?.current_spend / user?.monthly_budget) * 100)}%`
-                  }}
-                ></div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -140,7 +142,7 @@ function OverviewTab({ stats, loading, user, formatNumber, formatCurrency }) {
           <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <a
               href="/playground"
-              className="flex items-center justify-center gap-2 p-3 sm:p-4 bg-lime-50 text-lime-700 rounded-lg hover:bg-lime-100 active:bg-lime-200 transition-colors min-h-[48px] text-sm sm:text-base"
+              className="flex items-center justify-center gap-2 p-3 sm:p-4 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 active:bg-blue-200 transition-colors min-h-[48px] text-sm sm:text-base"
             >
               <TrendingUp size={18} />
               <span>Playground</span>
@@ -262,7 +264,7 @@ function HealthTab() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <RefreshCw className="w-8 h-8 animate-spin text-lime-600" />
+        <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -279,7 +281,7 @@ function HealthTab() {
               type="checkbox"
               checked={autoRefresh}
               onChange={(e) => setAutoRefresh(e.target.checked)}
-              className="rounded border-gray-300 text-lime-600 focus:ring-lime-500"
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
             Auto-refresh (10s)
           </label>
@@ -294,13 +296,13 @@ function HealthTab() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 border-l-4 border-l-lime-500">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 border-l-4 border-l-blue-500">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Providers</p>
               <p className="text-2xl font-bold text-gray-900">{summary.total || 0}</p>
             </div>
-            <Activity className="w-8 h-8 text-lime-500" />
+            <Activity className="w-8 h-8 text-blue-500" />
           </div>
         </div>
 
@@ -342,7 +344,7 @@ function HealthTab() {
 
           return (
             <div key={provider.name} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-lime-50 to-green-50 p-4 border-b border-gray-200">
+              <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <h2 className="text-xl font-semibold text-gray-900">{provider.name}</h2>
@@ -428,7 +430,7 @@ function HealthTab() {
                             </div>
                             <div>
                               <p className="text-xs text-gray-600">Active Requests</p>
-                              <p className="font-semibold text-lime-600">{group.active_requests}</p>
+                              <p className="font-semibold text-blue-600">{group.active_requests}</p>
                             </div>
                             <div>
                               <p className="text-xs text-gray-600">Total Requests</p>
@@ -545,7 +547,7 @@ export default function Dashboard() {
             <select
               value={days}
               onChange={(e) => setDays(Number(e.target.value))}
-              className="px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500 text-sm sm:text-base min-h-[44px] w-full sm:w-auto"
+              className="px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base min-h-[44px] w-full sm:w-auto"
             >
               <option value={7}>Last 7 days</option>
               <option value={30}>Last 30 days</option>
@@ -563,7 +565,7 @@ export default function Dashboard() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === tab.id
-                    ? 'border-lime-500 text-lime-700'
+                    ? 'border-blue-500 text-blue-700'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -575,11 +577,11 @@ export default function Dashboard() {
         </div>
 
         {!hasProviders && !showWizard && (
-          <div className="mb-6 bg-gradient-to-r from-lime-50 to-green-50 border border-lime-200 rounded-xl p-6">
+          <div className="mb-6 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-lime-100 rounded-lg">
-                  <Sparkles className="text-lime-600" size={24} />
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <Sparkles className="text-blue-600" size={24} />
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900">Get Started with AI Gateway</h3>
