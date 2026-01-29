@@ -1080,11 +1080,12 @@ client = OpenAI(
                   ].map((route, idx) => (
                     <button
                       key={idx}
+                      type="button"
                       onClick={() => {
                         setSelectedBuiltInRoute(route.path);
                         setBuiltInRouteModalOpen(true);
                       }}
-                      className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-left hover:bg-blue-50 hover:border-blue-300 transition-colors group"
+                      className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-left hover:bg-blue-50 hover:border-blue-300 transition-colors group cursor-pointer"
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`text-xs px-2 py-0.5 rounded font-medium ${
