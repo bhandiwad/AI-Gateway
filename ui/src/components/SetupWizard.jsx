@@ -179,12 +179,12 @@ export default function SetupWizard({ isOpen, onClose, onComplete }) {
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-lime-600 to-lime-700">
+        <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-blue-600 to-blue-700">
           <div className="flex items-center gap-4">
             <InfinitAILogo className="w-10 h-10" />
             <div className="text-white">
               <h2 className="text-xl font-bold">Setup Wizard</h2>
-              <p className="text-lime-100 text-sm">Get started with InfinitAI Gateway</p>
+              <p className="text-blue-100 text-sm">Get started with InfinitAI Gateway</p>
             </div>
           </div>
           <button onClick={onClose} className="text-white/80 hover:text-white">
@@ -200,9 +200,9 @@ export default function SetupWizard({ isOpen, onClose, onComplete }) {
               disabled={idx > currentStep}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                 idx === currentStep
-                  ? 'bg-lime-600 text-white'
+                  ? 'bg-blue-600 text-white'
                   : idx < currentStep
-                  ? 'bg-lime-100 text-lime-700 hover:bg-lime-200'
+                  ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
             >
@@ -229,7 +229,7 @@ export default function SetupWizard({ isOpen, onClose, onComplete }) {
 
           {currentStep === 0 && (
             <div className="text-center py-8">
-              <Sparkles size={64} className="mx-auto text-lime-600 mb-6" />
+              <Sparkles size={64} className="mx-auto text-blue-600 mb-6" />
               <h3 className="text-2xl font-bold text-gray-900 mb-4">Welcome to InfinitAI Gateway!</h3>
               <p className="text-gray-600 mb-8 max-w-md mx-auto">
                 This wizard will help you set up your first AI provider and API key in just a few steps.
@@ -277,7 +277,7 @@ export default function SetupWizard({ isOpen, onClose, onComplete }) {
                     onClick={() => setSelectedProvider(provider)}
                     className={`p-4 rounded-xl border-2 text-left transition-all ${
                       selectedProvider?.id === provider.id
-                        ? 'border-lime-600 bg-lime-50'
+                        ? 'border-blue-600 bg-blue-50'
                         : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                     }`}
                   >
@@ -298,7 +298,7 @@ export default function SetupWizard({ isOpen, onClose, onComplete }) {
                       value={providerApiKey}
                       onChange={(e) => setProviderApiKey(e.target.value)}
                       placeholder={`Enter your ${selectedProvider.name} API key`}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                     <p className="text-xs text-gray-500 mt-2">
                       Get your API key from the {selectedProvider.name} dashboard
@@ -333,7 +333,7 @@ export default function SetupWizard({ isOpen, onClose, onComplete }) {
                     value={apiKeyName}
                     onChange={(e) => setApiKeyName(e.target.value)}
                     placeholder="e.g., Development Key"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
                 
@@ -453,7 +453,7 @@ response = client.chat.completions.create(
                 </button>
                 <button
                   onClick={() => setCurrentStep(1)}
-                  className="flex items-center gap-2 px-6 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700"
+                  className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   Get Started
                   <ArrowRight size={18} />
@@ -465,7 +465,7 @@ response = client.chat.completions.create(
               <button
                 onClick={handleProviderSetup}
                 disabled={loading || !selectedProvider || !providerApiKey}
-                className="flex items-center gap-2 px-6 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700 disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
                 {loading ? 'Configuring...' : 'Configure Provider'}
                 <ArrowRight size={18} />
@@ -476,7 +476,7 @@ response = client.chat.completions.create(
               <button
                 onClick={handleCreateApiKey}
                 disabled={loading || !apiKeyName.trim()}
-                className="flex items-center gap-2 px-6 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700 disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
                 {loading ? 'Creating...' : 'Create API Key'}
                 <ArrowRight size={18} />
@@ -487,7 +487,7 @@ response = client.chat.completions.create(
               <button
                 onClick={handleTestConnection}
                 disabled={loading}
-                className="flex items-center gap-2 px-6 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700 disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
                 {loading ? 'Testing...' : 'Test Connection'}
                 <Zap size={18} />
@@ -497,7 +497,7 @@ response = client.chat.completions.create(
             {currentStep === 4 && (
               <button
                 onClick={handleComplete}
-                className="flex items-center gap-2 px-6 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700"
+                className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
                 Go to Playground
                 <ArrowRight size={18} />

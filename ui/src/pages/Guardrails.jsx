@@ -329,7 +329,7 @@ export default function Guardrails() {
                     setEditingProfile(null);
                     setShowProfileModal(true);
                   }}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-lime-600 text-white rounded-xl hover:bg-lime-700 font-medium transition-colors"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium transition-colors"
                 >
                   <Plus size={18} />
                   <span>Create Profile</span>
@@ -341,7 +341,7 @@ export default function Guardrails() {
                     setEditingProvider(null);
                     setShowProviderModal(true);
                   }}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-lime-600 text-white rounded-xl hover:bg-lime-700 font-medium transition-colors"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium transition-colors"
                 >
                   <Plus size={18} />
                   <span>Add Provider</span>
@@ -610,7 +610,7 @@ function ProfilesTab({ profiles, canEdit, onEdit, onDelete, onAdd }) {
           </p>
           <button
             onClick={onAdd}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-lime-600 text-white rounded-xl hover:bg-lime-700 font-medium transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium transition-colors"
           >
             <Plus size={18} />
             Create Profile
@@ -729,7 +729,7 @@ function ExternalProvidersTab({ providers, healthStatus, onEdit, onDelete, onTes
             <p className="text-gray-500 mb-6">Add external guardrail services to enhance your content safety.</p>
             <button
               onClick={onAdd}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-lime-600 text-white rounded-xl hover:bg-lime-700 font-medium transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium transition-colors"
             >
               <Plus size={18} />
               Add your first provider
@@ -976,7 +976,7 @@ function TestTab({ testInput, setTestInput, testResult, testing, testGuardrails 
         <button
           onClick={testGuardrails}
           disabled={testing || !testInput.trim()}
-          className="flex items-center gap-2 px-4 py-2.5 bg-lime-600 text-white rounded-xl hover:bg-lime-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
         >
           {testing ? (
             <>
@@ -1067,7 +1067,7 @@ function SettingsTab({ policies, selectedPolicy, setSelectedPolicy, saving, upda
           <button
             onClick={updatePolicy}
             disabled={saving}
-            className="mt-4 flex items-center gap-2 px-4 py-2.5 bg-lime-600 text-white rounded-xl hover:bg-lime-700 disabled:opacity-50 font-medium transition-colors"
+            className="mt-4 flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 font-medium transition-colors"
           >
             {saving ? (
               <>
@@ -1276,7 +1276,7 @@ function ProfileModal({ profile, onClose, onSave }) {
               </button>
               <button
                 type="submit"
-                className="px-4 py-2.5 bg-lime-600 text-white rounded-xl hover:bg-lime-700 font-medium disabled:opacity-50 transition-colors"
+                className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium disabled:opacity-50 transition-colors"
                 disabled={saving}
               >
                 {saving ? 'Saving...' : profile ? 'Update' : 'Create'}
@@ -1474,7 +1474,7 @@ function ProviderModal({ provider, onClose, onSave }) {
               </button>
               <button
                 type="submit"
-                className="px-4 py-2.5 bg-lime-600 text-white rounded-xl hover:bg-lime-700 font-medium disabled:opacity-50 transition-colors"
+                className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium disabled:opacity-50 transition-colors"
                 disabled={saving}
               >
                 {saving ? 'Saving...' : provider ? 'Update' : 'Create'}
@@ -1564,7 +1564,7 @@ function ExternalTestModal({ provider, token, onClose }) {
             <button
               onClick={runTest}
               disabled={testing || !testText.trim()}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-lime-600 text-white rounded-xl hover:bg-lime-700 disabled:opacity-50 font-medium transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 font-medium transition-colors"
             >
               {testing ? (
                 <>

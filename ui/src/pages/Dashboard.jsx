@@ -285,7 +285,7 @@ function HealthTab() {
           </label>
           <button
             onClick={fetchHealthData}
-            className="px-4 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700 flex items-center gap-2 text-sm"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm"
           >
             <RefreshCw className="w-4 h-4" />
             Refresh
@@ -588,7 +588,7 @@ export default function Dashboard() {
               </div>
               <button
                 onClick={() => setShowWizard(true)}
-                className="px-4 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700 font-medium"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
               >
                 Start Setup
               </button>
