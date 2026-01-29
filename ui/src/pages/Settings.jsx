@@ -5,9 +5,13 @@ import { Save, User, Shield, Bell, Loader2, RefreshCw, Trash2, CheckCircle, XCir
 import axios from 'axios';
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user, token, refreshUser } = useAuth();
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
   const [activeTab, setActiveTab] = useState('account');
+  const [rateLimit, setRateLimit] = useState(user?.rate_limit || 100);
+  const [monthlyBudgetINR, setMonthlyBudgetINR] = useState(Math.round((user?.monthly_budget || 0) * 83.5));
   
   const [ssoConfig, setSsoConfig] = useState(null);
   const [ssoLoading, setSsoLoading] = useState(true);
@@ -121,9 +125,25 @@ export default function Settings() {
     setSsoFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const monthlyBudgetUSD = monthlyBudgetINR / 83.5;
+      await axios.put(`/api/v1/admin/users/${user.id}`, {
+        rate_limit: parseInt(rateLimit) || 0,
+        monthly_budget: monthlyBudgetUSD
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+      if (refreshUser) refreshUser();
+    } catch (err) {
+      setSaveError(err.response?.data?.detail || 'Failed to save settings');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -163,13 +183,13 @@ export default function Settings() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Rate Limit (requests/min)</label>
-                    <input type="number" defaultValue={user?.rate_limit || 100} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    <p className="text-xs text-gray-500 mt-1">Maximum API requests per minute</p>
+                    <input type="number" value={rateLimit} onChange={(e) => setRateLimit(e.target.value)} min="0" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <p className="text-xs text-gray-500 mt-1">Maximum API requests per minute (0 = unlimited)</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Budget (₹)</label>
-                    <input type="number" defaultValue={Math.round((user?.monthly_budget || 0) * 83.5)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    <p className="text-xs text-gray-500 mt-1">Maximum monthly spending limit in INR</p>
+                    <input type="number" value={monthlyBudgetINR} onChange={(e) => setMonthlyBudgetINR(e.target.value)} min="0" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <p className="text-xs text-gray-500 mt-1">Maximum monthly spending limit in INR (0 = no limit)</p>
                   </div>
                 </div>
                 <div className="mt-4 p-3 bg-gray-50 rounded-lg">
@@ -185,7 +205,12 @@ export default function Settings() {
                   </div>
                 </div>
               </div>
-              <div className="flex justify-end"><button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><Save size={18} />{saved ? 'Saved!' : 'Save Changes'}</button></div>
+              {saveError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                  {saveError}
+                </div>
+              )}
+              <div className="flex justify-end"><button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">{saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}{saving ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}</button></div>
             </div>
           )}
           {activeTab === 'sso' && (
