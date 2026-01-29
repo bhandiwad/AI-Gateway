@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { usageApi } from '../api/client';
+import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/Header';
 import UsageChart from '../components/UsageChart';
+import SetupWizard from '../components/SetupWizard';
 import { 
   Activity, DollarSign, Clock, CheckCircle, TrendingUp, Zap,
-  AlertCircle, XCircle, RefreshCw, BarChart3, Heart
+  AlertCircle, XCircle, RefreshCw, BarChart3, Heart, Sparkles
 } from 'lucide-react';
 
 function StatCard({ icon: Icon, label, value, subvalue, color }) {
@@ -464,15 +466,37 @@ function HealthTab() {
 }
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
   const [activeTab, setActiveTab] = useState('overview');
+  const [showWizard, setShowWizard] = useState(false);
+  const [hasProviders, setHasProviders] = useState(true);
 
   useEffect(() => {
     loadStats();
+    checkSetupStatus();
   }, [days]);
+
+  const checkSetupStatus = async () => {
+    try {
+      const [providersRes, keysRes] = await Promise.all([
+        api.get('/admin/providers', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] })),
+        api.get('/admin/api-keys', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] }))
+      ]);
+      const providers = providersRes.data || [];
+      const keys = keysRes.data || [];
+      setHasProviders(providers.length > 0);
+      
+      const wizardDismissed = localStorage.getItem('setup_wizard_dismissed');
+      if (providers.length === 0 && keys.length === 0 && !wizardDismissed) {
+        setShowWizard(true);
+      }
+    } catch (err) {
+      console.error('Failed to check setup status:', err);
+    }
+  };
 
   const loadStats = async () => {
     try {
@@ -550,6 +574,28 @@ export default function Dashboard() {
           })}
         </div>
 
+        {!hasProviders && !showWizard && (
+          <div className="mb-6 bg-gradient-to-r from-lime-50 to-green-50 border border-lime-200 rounded-xl p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-lime-100 rounded-lg">
+                  <Sparkles className="text-lime-600" size={24} />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Get Started with AI Gateway</h3>
+                  <p className="text-sm text-gray-600">Configure your first provider and API key with our setup wizard</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowWizard(true)}
+                className="px-4 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700 font-medium"
+              >
+                Start Setup
+              </button>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'overview' ? (
           <OverviewTab
             stats={stats}
@@ -562,6 +608,20 @@ export default function Dashboard() {
           <HealthTab />
         )}
       </div>
+
+      <SetupWizard
+        isOpen={showWizard}
+        onClose={() => {
+          setShowWizard(false);
+          localStorage.setItem('setup_wizard_dismissed', 'true');
+        }}
+        onComplete={() => {
+          setShowWizard(false);
+          localStorage.setItem('setup_wizard_dismissed', 'true');
+          checkSetupStatus();
+          loadStats();
+        }}
+      />
     </div>
   );
 }

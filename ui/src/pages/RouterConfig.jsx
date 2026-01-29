@@ -5,6 +5,7 @@ import Header from '../components/Header';
 import ProviderSetupModal from '../components/ProviderSetupModal';
 import RouteSetupModal from '../components/RouteSetupModal';
 import PolicyDesigner from '../components/PolicyDesigner';
+import BuiltInRouteDetailModal from '../components/BuiltInRouteDetailModal';
 import { 
   GitBranch, 
   Server, 
@@ -58,6 +59,8 @@ export default function RouterConfig() {
   const [apiRoutes, setApiRoutes] = useState([]);
   const [routeModalOpen, setRouteModalOpen] = useState(false);
   const [editingRoute, setEditingRoute] = useState(null);
+  const [builtInRouteModalOpen, setBuiltInRouteModalOpen] = useState(false);
+  const [selectedBuiltInRoute, setSelectedBuiltInRoute] = useState(null);
 
   const canEdit = hasPermission('router:edit');
 
@@ -1067,7 +1070,7 @@ client = OpenAI(
 
               <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
                 <h3 className="font-semibold text-gray-900 mb-3">Built-in Routes</h3>
-                <p className="text-sm text-gray-600 mb-4">These routes are provided by default and cannot be modified</p>
+                <p className="text-sm text-gray-600 mb-4">Click on a route to view detailed documentation with examples</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
                     { path: '/chat/completions', method: 'POST', desc: 'Chat completions API (OpenAI-compatible)' },
@@ -1075,17 +1078,25 @@ client = OpenAI(
                     { path: '/models', method: 'GET', desc: 'List available models' },
                     { path: '/completions', method: 'POST', desc: 'Text completions API' }
                   ].map((route, idx) => (
-                    <div key={idx} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setSelectedBuiltInRoute(route.path);
+                        setBuiltInRouteModalOpen(true);
+                      }}
+                      className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-left hover:bg-blue-50 hover:border-blue-300 transition-colors group"
+                    >
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`text-xs px-2 py-0.5 rounded font-medium ${
                           route.method === 'GET' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
                         }`}>
                           {route.method}
                         </span>
-                        <span className="font-mono text-sm font-medium text-gray-900">{route.path}</span>
+                        <span className="font-mono text-sm font-medium text-gray-900 group-hover:text-blue-700">{route.path}</span>
+                        <ArrowRight size={14} className="ml-auto text-gray-400 group-hover:text-blue-600" />
                       </div>
                       <p className="text-xs text-gray-500">{route.desc}</p>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -1393,6 +1404,16 @@ client = OpenAI(
         onSave={fetchData}
         editRoute={editingRoute}
         token={token}
+      />
+
+      <BuiltInRouteDetailModal
+        isOpen={builtInRouteModalOpen}
+        onClose={() => {
+          setBuiltInRouteModalOpen(false);
+          setSelectedBuiltInRoute(null);
+        }}
+        routePath={selectedBuiltInRoute}
+        baseUrl={proxyUrl}
       />
     </div>
   );

@@ -67,6 +67,7 @@ ROLE_PERMISSIONS: dict[UserRole, Set[Permission]] = {
     UserRole.MANAGER: {
         Permission.API_KEYS_VIEW,
         Permission.API_KEYS_CREATE,
+        Permission.API_KEYS_REVOKE,
         Permission.BILLING_VIEW,
         Permission.BILLING_EXPORT,
         Permission.AUDIT_VIEW,
@@ -74,11 +75,14 @@ ROLE_PERMISSIONS: dict[UserRole, Set[Permission]] = {
         Permission.USERS_CREATE,
         Permission.USERS_EDIT,
         Permission.GUARDRAILS_VIEW,
+        Permission.GUARDRAILS_EDIT,
         Permission.GUARDRAILS_TEST,
         Permission.ROUTER_VIEW,
+        Permission.ROUTER_EDIT,
         Permission.GATEWAY_USE,
         Permission.DASHBOARD_VIEW,
         Permission.SETTINGS_VIEW,
+        Permission.SETTINGS_EDIT,
     },
     
     UserRole.USER: {
