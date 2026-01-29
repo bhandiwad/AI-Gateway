@@ -131,6 +131,48 @@ async def get_current_tenant(
     return tenant_data
 
 
+class MeUpdate(BaseModel):
+    rate_limit: Optional[int] = None
+    monthly_budget: Optional[float] = None
+
+
+@router.put("/auth/me")
+async def update_current_user_settings(
+    updates: MeUpdate,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update current user's own settings (rate limit, budget)."""
+    tenant = tenancy_service.get_tenant_by_id(db, int(current_user["sub"]))
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    
+    user = get_user_from_token(current_user, db)
+    
+    if user:
+        # Update user record
+        update_dict = {}
+        if updates.rate_limit is not None:
+            update_dict["rate_limit"] = updates.rate_limit
+        if updates.monthly_budget is not None:
+            update_dict["monthly_budget"] = updates.monthly_budget
+        
+        if update_dict:
+            from backend.app.services.user_service import user_service
+            user_service.update_user(db, user.id, update_dict)
+        
+        return {"message": "Settings updated successfully", "user_id": user.id}
+    else:
+        # Update tenant record for admin users without separate user record
+        if updates.rate_limit is not None:
+            tenant.rate_limit = updates.rate_limit
+        if updates.monthly_budget is not None:
+            tenant.monthly_budget = updates.monthly_budget
+        db.commit()
+        
+        return {"message": "Settings updated successfully", "tenant_id": tenant.id}
+
+
 @router.get("/tenants", response_model=List[TenantResponse])
 async def list_tenants(
     current_user: dict = Depends(get_current_user),

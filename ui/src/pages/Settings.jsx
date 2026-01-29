@@ -130,7 +130,7 @@ export default function Settings() {
     setSaveError(null);
     try {
       const monthlyBudgetUSD = monthlyBudgetINR / 83.5;
-      await axios.put(`/api/v1/admin/users/${user.id}`, {
+      await axios.put('/api/v1/admin/auth/me', {
         rate_limit: parseInt(rateLimit) || 0,
         monthly_budget: monthlyBudgetUSD
       }, {
