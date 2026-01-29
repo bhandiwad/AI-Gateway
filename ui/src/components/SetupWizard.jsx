@@ -82,10 +82,11 @@ export default function SetupWizard({ isOpen, onClose, onComplete }) {
       await api.post('/admin/providers', {
         name: selectedProvider.id,
         display_name: selectedProvider.name,
-        provider_type: selectedProvider.id,
-        api_key: providerApiKey,
-        is_active: true,
-        models: selectedProvider.models.map(m => ({ id: m, name: m }))
+        service_type: selectedProvider.id,
+        models: selectedProvider.models,
+        config: {
+          api_key: providerApiKey
+        }
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
