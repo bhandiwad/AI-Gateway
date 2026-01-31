@@ -121,31 +121,36 @@ curl http://localhost:8000/api/v1/chat/completions \
 
 ## Key Features
 
-### Enterprise Guardrails
-- **PII Detection & Redaction** - Email, phone, SSN, Aadhaar, PAN, credit cards
-- **Compliance Processors** - DPDP, GDPR, HIPAA, PCI-DSS compliance checks
-- **Prompt Injection Detection** - Block malicious prompt manipulation
-- **Secrets Detection** - Prevent API keys, tokens from leaking
-- **File Content Scanning** - Apply guardrails to uploaded PDFs, DOCX, images (OCR)
+### Multi-Provider Support
+- **Unified API** - Single OpenAI-compatible endpoint for all providers
+- **Providers** - OpenAI, Anthropic, Google, Azure, AWS Bedrock, local vLLM
+- **Model Routing** - Route requests to specific providers based on rules
+- **Automatic Failover** - Circuit breaker with fallback providers
 
-### Statistics & Analytics
-- **Comprehensive Dashboard** - Requests, tokens, costs (₹ INR)
-- **Per-User/Department Analytics** - Track usage by user, team, department
-- **API Key Metrics** - Hits, success rates per API key
-- **Model Usage** - Top models, provider breakdown
-- **Hourly Distribution** - Request patterns over time
+### Enterprise Security
+- **Multi-Tenant Architecture** - Isolated tenants with separate configurations
+- **Role-Based Access Control** - Admin, Developer, Viewer roles with granular permissions
+- **SSO Integration** - SAML 2.0 and OIDC support for enterprise identity providers
+- **API Key Management** - Scoped keys with environment separation (dev/staging/prod)
 
-### Prompt Caching
-- **Semantic Cache** - Reuse responses for similar prompts (92% similarity)
-- **Token Savings Tracking** - See how many tokens saved
-- **Cost Savings** - Track money saved from cache hits
-- **Cache Management** - View stats, clear cache via UI
+### Guardrails & Compliance
+- **PII Detection** - Email, phone, SSN, Aadhaar, PAN, credit cards with redaction
+- **Compliance Processors** - DPDP, GDPR, HIPAA, PCI-DSS checks
+- **Prompt Injection Detection** - Block malicious prompt manipulation attempts
+- **Secrets Detection** - Prevent API keys and tokens from leaking
+- **File Scanning** - Apply guardrails to PDFs, DOCX, images with OCR
 
-### Intelligent Routing
-- **Multi-Provider Support** - OpenAI, Anthropic, Google, Azure, AWS Bedrock
-- **Load Balancing** - Round-robin, weighted, least-latency
-- **Circuit Breaker** - Automatic failover on provider errors
-- **Budget Enforcement** - Per-user, per-department spending limits
+### Cost Optimization
+- **Semantic Caching** - Reuse responses for similar prompts, reduce API costs
+- **Budget Controls** - Per-user and per-department spending limits
+- **Usage Tracking** - Token and cost tracking per request
+- **Rate Limiting** - Configurable limits per API key
+
+### Observability
+- **Audit Logging** - Complete request/response audit trail
+- **OpenTelemetry** - Distributed tracing and metrics
+- **Prometheus Metrics** - Built-in `/metrics` endpoint
+- **Structured Logging** - JSON logs with request correlation
 
 ---
 
