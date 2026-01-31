@@ -7,8 +7,10 @@ import UsageChart from '../components/UsageChart';
 import SetupWizard from '../components/SetupWizard';
 import { 
   Activity, DollarSign, Clock, CheckCircle, TrendingUp, Zap,
-  AlertCircle, XCircle, RefreshCw, BarChart3, Heart, Sparkles
+  AlertCircle, XCircle, RefreshCw, BarChart3, Heart, Sparkles,
+  Plus, Server, Key, Shield, Route, ChevronDown
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 function StatCard({ icon: Icon, label, value, subvalue, color }) {
   return (
@@ -27,7 +29,7 @@ function StatCard({ icon: Icon, label, value, subvalue, color }) {
   );
 }
 
-function OverviewTab({ stats, loading, user, formatNumber, formatCurrency }) {
+function OverviewTab({ stats, loading, user, formatNumber, formatCurrency, cacheStats }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -66,6 +68,28 @@ function OverviewTab({ stats, loading, user, formatNumber, formatCurrency }) {
           color="bg-teal-500"
         />
       </div>
+
+      {cacheStats?.enabled && cacheStats?.hits > 0 && (
+        <div className="mb-4 sm:mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Zap className="text-green-600" size={20} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Prompt Cache Savings</h3>
+                <p className="text-sm text-gray-600">
+                  {cacheStats.hit_rate}% cache hit rate • {formatNumber(cacheStats.tokens_saved)} tokens saved
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-lg font-bold text-green-700">₹{cacheStats.cost_saved_inr?.toLocaleString('en-IN')}</p>
+              <p className="text-xs text-gray-500">Estimated savings</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6">
         <div className="lg:col-span-2">
@@ -474,22 +498,53 @@ export default function Dashboard() {
   const [days, setDays] = useState(30);
   const [activeTab, setActiveTab] = useState('overview');
   const [showWizard, setShowWizard] = useState(false);
-  const [hasProviders, setHasProviders] = useState(true);
+  const [showQuickActions, setShowQuickActions] = useState(false);
+  const [cacheStats, setCacheStats] = useState(null);
+  const [setupStatus, setSetupStatus] = useState({
+    hasProviders: true,
+    hasApiKeys: true,
+    hasGuardrails: true,
+    providerCount: 0,
+    apiKeyCount: 0,
+    guardrailCount: 0
+  });
 
   useEffect(() => {
     loadStats();
     checkSetupStatus();
+    loadCacheStats();
   }, [days]);
+
+  const loadCacheStats = async () => {
+    try {
+      const response = await api.get('/admin/cache/stats', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setCacheStats(response.data);
+    } catch (err) {
+      console.error('Failed to load cache stats:', err);
+    }
+  };
 
   const checkSetupStatus = async () => {
     try {
-      const [providersRes, keysRes] = await Promise.all([
+      const [providersRes, keysRes, guardrailsRes] = await Promise.all([
         api.get('/admin/providers', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] })),
-        api.get('/admin/api-keys', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] }))
+        api.get('/admin/api-keys', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] })),
+        api.get('/admin/providers/profiles/list', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] }))
       ]);
       const providers = providersRes.data || [];
       const keys = keysRes.data || [];
-      setHasProviders(providers.length > 0);
+      const guardrails = guardrailsRes.data || [];
+      
+      setSetupStatus({
+        hasProviders: providers.length > 0,
+        hasApiKeys: keys.length > 0,
+        hasGuardrails: guardrails.length > 0,
+        providerCount: providers.length,
+        apiKeyCount: keys.length,
+        guardrailCount: guardrails.length
+      });
       
       const wizardDismissed = localStorage.getItem('setup_wizard_dismissed');
       if (providers.length === 0 && keys.length === 0 && !wizardDismissed) {
@@ -543,17 +598,107 @@ export default function Dashboard() {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
             Welcome back, {user?.name}
           </h1>
-          {activeTab === 'overview' && (
-            <select
-              value={days}
-              onChange={(e) => setDays(Number(e.target.value))}
-              className="px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base min-h-[44px] w-full sm:w-auto"
-            >
-              <option value={7}>Last 7 days</option>
-              <option value={30}>Last 30 days</option>
-              <option value={90}>Last 90 days</option>
-            </select>
-          )}
+          <div className="flex items-center gap-3">
+            {activeTab === 'overview' && (
+              <select
+                value={days}
+                onChange={(e) => setDays(Number(e.target.value))}
+                className="px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base min-h-[44px]"
+              >
+                <option value={7}>Last 7 days</option>
+                <option value={30}>Last 30 days</option>
+                <option value={90}>Last 90 days</option>
+              </select>
+            )}
+            <div className="relative">
+              <button
+                onClick={() => setShowQuickActions(!showQuickActions)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm"
+              >
+                <Plus size={18} />
+                Quick Start
+                <ChevronDown size={16} className={`transition-transform ${showQuickActions ? 'rotate-180' : ''}`} />
+              </button>
+              {showQuickActions && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowQuickActions(false)} />
+                  <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
+                    <div className="p-2">
+                      <Link
+                        to="/router"
+                        onClick={() => setShowQuickActions(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                          <Route size={18} className="text-blue-600" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900 text-sm">Add Route</div>
+                          <div className="text-xs text-gray-500">Create API route</div>
+                        </div>
+                      </Link>
+                      <Link
+                        to="/router"
+                        onClick={() => setShowQuickActions(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="p-2 bg-green-100 rounded-lg">
+                          <Server size={18} className="text-green-600" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900 text-sm">Add Provider</div>
+                          <div className="text-xs text-gray-500">Connect AI service</div>
+                        </div>
+                      </Link>
+                      <Link
+                        to="/guardrails"
+                        onClick={() => setShowQuickActions(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="p-2 bg-orange-100 rounded-lg">
+                          <Shield size={18} className="text-orange-600" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900 text-sm">Add Guardrails</div>
+                          <div className="text-xs text-gray-500">Set up protection</div>
+                        </div>
+                      </Link>
+                      <Link
+                        to="/api-keys"
+                        onClick={() => setShowQuickActions(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="p-2 bg-purple-100 rounded-lg">
+                          <Key size={18} className="text-purple-600" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900 text-sm">Create API Key</div>
+                          <div className="text-xs text-gray-500">Generate access key</div>
+                        </div>
+                      </Link>
+                    </div>
+                    <div className="border-t border-gray-100 p-2">
+                      <button
+                        onClick={() => {
+                          setShowQuickActions(false);
+                          setShowWizard(true);
+                        }}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-blue-50 transition-colors w-full text-left"
+                      >
+                        <div className="p-2 bg-blue-600 rounded-lg">
+                          <Sparkles size={18} className="text-white" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-blue-700 text-sm">Setup Wizard</div>
+                          <div className="text-xs text-gray-500">Guided setup flow</div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="flex gap-2 mb-6 border-b border-gray-200">
@@ -576,24 +721,52 @@ export default function Dashboard() {
           })}
         </div>
 
-        {!hasProviders && !showWizard && (
+        {(!setupStatus.hasProviders || !setupStatus.hasApiKeys) && !showWizard && (
           <div className="mb-6 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-blue-100 rounded-lg">
                   <Sparkles className="text-blue-600" size={24} />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Get Started with AI Gateway</h3>
-                  <p className="text-sm text-gray-600">Configure your first provider and API key with our setup wizard</p>
+                  <h3 className="font-semibold text-gray-900">
+                    {!setupStatus.hasProviders 
+                      ? 'Configure Your First Provider' 
+                      : !setupStatus.hasApiKeys 
+                      ? 'Create Your First API Key'
+                      : 'Complete Your Setup'}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    {!setupStatus.hasProviders 
+                      ? 'Connect to OpenAI, Anthropic, Google AI, or other providers'
+                      : !setupStatus.hasApiKeys 
+                      ? `You have ${setupStatus.providerCount} provider(s) configured. Create an API key to start making requests.`
+                      : 'Your gateway is almost ready!'}
+                  </p>
                 </div>
               </div>
               <button
                 onClick={() => setShowWizard(true)}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
               >
-                Start Setup
+                {!setupStatus.hasProviders ? 'Add Provider' : 'Create API Key'}
               </button>
+            </div>
+          </div>
+        )}
+
+        {setupStatus.hasProviders && setupStatus.hasApiKeys && !setupStatus.hasGuardrails && !showWizard && (
+          <div className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <Shield className="text-amber-600" size={20} />
+                <p className="text-sm text-amber-800">
+                  <strong>Tip:</strong> Set up guardrails to add PII protection, prompt injection detection, and compliance controls.
+                </p>
+              </div>
+              <a href="/guardrails" className="text-sm text-amber-700 hover:text-amber-900 font-medium">
+                Configure Guardrails →
+              </a>
             </div>
           </div>
         )}
@@ -605,6 +778,7 @@ export default function Dashboard() {
             user={user}
             formatNumber={formatNumber}
             formatCurrency={formatCurrency}
+            cacheStats={cacheStats}
           />
         ) : (
           <HealthTab />

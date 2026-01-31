@@ -67,9 +67,6 @@ markdown_extensions:
 extra:
   homepage: /
   social:
-    - icon: fontawesome/solid/arrow-left
-      link: /
-      name: Back to App
     - icon: fontawesome/brands/github
       link: https://github.com/infinitai/ai-gateway
 

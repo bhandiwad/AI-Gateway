@@ -9,6 +9,8 @@ import {
   Legend
 } from 'recharts';
 
+const USD_TO_INR = 83.5;
+
 export default function UsageChart({ data, title = "Usage Over Time" }) {
   const formattedData = data?.map(item => ({
     ...item,
@@ -16,7 +18,7 @@ export default function UsageChart({ data, title = "Usage Over Time" }) {
       month: 'short', 
       day: 'numeric' 
     }),
-    cost: Number(item.cost?.toFixed(4)) || 0,
+    cost: Number(((item.cost || 0) * USD_TO_INR).toFixed(2)) || 0,
     tokens: item.tokens || 0,
     requests: item.requests || 0,
   })) || [];
@@ -68,7 +70,7 @@ export default function UsageChart({ data, title = "Usage Over Time" }) {
               stroke="#10b981" 
               strokeWidth={2}
               dot={{ fill: '#10b981' }}
-              name="Cost ($)"
+              name="Cost (₹)"
             />
           </LineChart>
         </ResponsiveContainer>

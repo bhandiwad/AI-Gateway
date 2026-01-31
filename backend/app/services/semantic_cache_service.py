@@ -35,7 +35,9 @@ class SemanticCacheService:
         self._stats = {
             "hits": 0,
             "misses": 0,
-            "evictions": 0
+            "evictions": 0,
+            "tokens_saved": 0,
+            "cost_saved_usd": 0.0
         }
         
         logger.info(
@@ -293,9 +295,16 @@ class SemanticCacheService:
         
         logger.info("tenant_cache_invalidated", tenant_id=tenant_id)
     
+    def record_cache_savings(self, tokens_saved: int, cost_saved: float):
+        """Record token and cost savings from a cache hit."""
+        self._stats["tokens_saved"] += tokens_saved
+        self._stats["cost_saved_usd"] += cost_saved
+    
     def get_stats(self) -> Dict[str, Any]:
         total = self._stats["hits"] + self._stats["misses"]
         hit_rate = self._stats["hits"] / total if total > 0 else 0
+        
+        USD_TO_INR = 83.5
         
         return {
             "hits": self._stats["hits"],
@@ -304,7 +313,10 @@ class SemanticCacheService:
             "hit_rate": round(hit_rate * 100, 2),
             "cache_size": len(self._cache),
             "embeddings_indexed": len(self._embeddings_index),
-            "tenants_cached": len(self._tenant_caches)
+            "tenants_cached": len(self._tenant_caches),
+            "tokens_saved": self._stats["tokens_saved"],
+            "cost_saved_usd": round(self._stats["cost_saved_usd"], 4),
+            "cost_saved_inr": round(self._stats["cost_saved_usd"] * USD_TO_INR, 2)
         }
     
     async def clear_all(self):

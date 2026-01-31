@@ -112,7 +112,40 @@ curl http://localhost:8000/api/v1/chat/completions \
 | [Deployment](docs/DEPLOYMENT.md) | Production deployment guide |
 | [API Reference](docs/API.md) | Complete API documentation |
 | [Guardrails](docs/GUARDRAILS.md) | Security guardrails configuration |
+| [File Guardrails](docs/FILE_GUARDRAILS.md) | Apply guardrails to uploaded files |
+| [Statistics](docs/STATISTICS.md) | Usage analytics and reporting |
+| [Prompt Caching](docs/PROMPT_CACHING.md) | Semantic caching for cost savings |
 | [SSO Setup](docs/SSO.md) | Single Sign-On integration |
+
+---
+
+## ✨ Key Features
+
+### 🛡️ Enterprise Guardrails
+- **PII Detection & Redaction** - Email, phone, SSN, Aadhaar, PAN, credit cards
+- **Compliance Processors** - DPDP, GDPR, HIPAA, PCI-DSS compliance checks
+- **Prompt Injection Detection** - Block malicious prompt manipulation
+- **Secrets Detection** - Prevent API keys, tokens from leaking
+- **File Content Scanning** - Apply guardrails to uploaded PDFs, DOCX, images (OCR)
+
+### 📊 Statistics & Analytics
+- **Comprehensive Dashboard** - Requests, tokens, costs (₹ INR)
+- **Per-User/Department Analytics** - Track usage by user, team, department
+- **API Key Metrics** - Hits, success rates per API key
+- **Model Usage** - Top models, provider breakdown
+- **Hourly Distribution** - Request patterns over time
+
+### ⚡ Prompt Caching
+- **Semantic Cache** - Reuse responses for similar prompts (92% similarity)
+- **Token Savings Tracking** - See how many tokens saved
+- **Cost Savings** - Track money saved from cache hits
+- **Cache Management** - View stats, clear cache via UI
+
+### 🔀 Intelligent Routing
+- **Multi-Provider Support** - OpenAI, Anthropic, Google, Azure, AWS Bedrock
+- **Load Balancing** - Round-robin, weighted, least-latency
+- **Circuit Breaker** - Automatic failover on provider errors
+- **Budget Enforcement** - Per-user, per-department spending limits
 
 ---
 

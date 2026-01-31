@@ -82,9 +82,12 @@ export default function ApiKeys() {
       const response = await api.get('/admin/organization/departments', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setDepartments(response.data || []);
+      // Handle both {departments: [...]} and [...] response formats
+      const deptData = response.data?.departments || response.data || [];
+      setDepartments(Array.isArray(deptData) ? deptData : []);
     } catch (error) {
       console.error('Failed to load departments:', error);
+      setDepartments([]);
     }
   };
 
@@ -94,9 +97,12 @@ export default function ApiKeys() {
       const response = await api.get('/admin/organization/teams', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setTeams(response.data || []);
+      // Handle both {teams: [...]} and [...] response formats
+      const teamData = response.data?.teams || response.data || [];
+      setTeams(Array.isArray(teamData) ? teamData : []);
     } catch (error) {
       console.error('Failed to load teams:', error);
+      setTeams([]);
     }
   };
 
@@ -106,9 +112,12 @@ export default function ApiKeys() {
       const response = await api.get('/admin/users', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setUsers(response.data || []);
+      // Handle both {users: [...]} and [...] response formats
+      const userData = response.data?.users || response.data || [];
+      setUsers(Array.isArray(userData) ? userData : []);
     } catch (error) {
       console.error('Failed to load users:', error);
+      setUsers([]);
     }
   };
 

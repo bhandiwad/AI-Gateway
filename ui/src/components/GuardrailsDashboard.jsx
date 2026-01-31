@@ -20,39 +20,17 @@ export default function GuardrailsDashboard({ token }) {
       setStats(response.data);
     } catch (err) {
       console.error('Failed to fetch guardrail stats:', err);
+      // Show empty state instead of fake data
       setStats({
-        total_requests: 12847,
-        blocked_requests: 234,
-        redacted_requests: 567,
-        passed_requests: 12046,
-        block_rate: 1.82,
-        top_triggered_profiles: [
-          { name: 'Healthcare Compliance', triggers: 89, block_rate: 2.4 },
-          { name: 'Financial Services', triggers: 67, block_rate: 1.8 },
-          { name: 'Standard Protection', triggers: 45, block_rate: 0.9 },
-          { name: 'Content Moderation', triggers: 33, block_rate: 3.2 },
-        ],
-        top_triggered_processors: [
-          { type: 'pii_detection', triggers: 156, action_breakdown: { block: 34, redact: 122 } },
-          { type: 'prompt_injection', triggers: 67, action_breakdown: { block: 67, redact: 0 } },
-          { type: 'toxicity_filter', triggers: 45, action_breakdown: { block: 45, redact: 0 } },
-          { type: 'topic_filter', triggers: 23, action_breakdown: { block: 23, redact: 0 } },
-        ],
-        by_department: [
-          { name: 'Engineering', requests: 5234, blocked: 45 },
-          { name: 'Data Science', requests: 3421, blocked: 89 },
-          { name: 'Customer Success', requests: 2345, blocked: 56 },
-          { name: 'Marketing', requests: 1847, blocked: 44 },
-        ],
-        trend: [
-          { date: '2024-12-04', requests: 1823, blocked: 32 },
-          { date: '2024-12-05', requests: 1945, blocked: 28 },
-          { date: '2024-12-06', requests: 1756, blocked: 41 },
-          { date: '2024-12-07', requests: 1634, blocked: 35 },
-          { date: '2024-12-08', requests: 1892, blocked: 29 },
-          { date: '2024-12-09', requests: 2012, blocked: 38 },
-          { date: '2024-12-10', requests: 1785, blocked: 31 },
-        ]
+        total_requests: 0,
+        blocked_requests: 0,
+        redacted_requests: 0,
+        passed_requests: 0,
+        block_rate: 0,
+        top_triggered_profiles: [],
+        top_triggered_processors: [],
+        by_department: [],
+        trend: []
       });
     } finally {
       setLoading(false);

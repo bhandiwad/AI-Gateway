@@ -19,8 +19,10 @@ Welcome to InfinitAI Gateway - an enterprise-grade API gateway for AI/LLM servic
 
 | Feature | Description |
 |---------|-------------|
-| **Guardrails 2.0** | Enhanced PII detection with 15+ data types, improved prompt injection detection, BFSI compliance. |
-| **Semantic Caching** | Reduce costs by up to 40% with intelligent response caching. |
+| **[File Guardrails](FILE_GUARDRAILS.md)** | Apply guardrails to uploaded files - PDFs, DOCX, images with OCR. |
+| **[Statistics & Analytics](STATISTICS.md)** | Comprehensive usage tracking by user, department, API key, model. |
+| **[Prompt Caching](PROMPT_CACHING.md)** | Semantic caching with token/cost savings tracking in ₹ INR. |
+| **Guardrails 2.0** | Enhanced PII detection with 15+ data types, DPDP/GDPR/HIPAA compliance. |
 | **Load Balancing** | Round-robin, weighted, and least-connections strategies across providers. |
 | **Smart Alerts** | Configure alerts for usage thresholds, cost limits, and error rates. |
 
@@ -34,6 +36,9 @@ Welcome to InfinitAI Gateway - an enterprise-grade API gateway for AI/LLM servic
 | Make my first API call | [Quickstart](get-started/quickstart.md) |
 | See all API endpoints | [API Reference](develop/api-reference/index.md) |
 | Configure guardrails | [Guardrails Guide](develop/concepts/guardrails.md) |
+| Scan files for violations | [File Guardrails](FILE_GUARDRAILS.md) |
+| View usage statistics | [Statistics & Analytics](STATISTICS.md) |
+| Enable prompt caching | [Prompt Caching](PROMPT_CACHING.md) |
 | Deploy to production | [Deployment Guide](deploy/docker.md) |
 | Set up SSO | [SSO Integration](develop/concepts/sso.md) |
 

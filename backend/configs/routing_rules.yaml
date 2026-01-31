@@ -1,5 +1,5 @@
 routing:
-  default_provider: openai
+  default_provider: mock
   default_model: gpt-4o-mini
   strategies:
   - name: cost_optimized

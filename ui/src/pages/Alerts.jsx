@@ -127,7 +127,7 @@ const Alerts = () => {
 
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-lime-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
           ) : alertConfigs.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
@@ -211,7 +211,7 @@ const Alerts = () => {
                               setEditingConfig(config);
                               setShowModal(true);
                             }}
-                            className="p-2 text-lime-600 hover:bg-lime-50 rounded-lg transition-colors"
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
@@ -307,7 +307,7 @@ const AlertModal = ({ config, alertTypes, onClose, onSave }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
         <div className="p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-6">
@@ -321,7 +321,7 @@ const AlertModal = ({ config, alertTypes, onClose, onSave }) => {
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition-colors"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 required
               />
             </div>
@@ -331,7 +331,7 @@ const AlertModal = ({ config, alertTypes, onClose, onSave }) => {
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition-colors"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 rows="2"
               />
             </div>
@@ -342,7 +342,7 @@ const AlertModal = ({ config, alertTypes, onClose, onSave }) => {
                 <select
                   value={formData.alert_type}
                   onChange={(e) => setFormData({ ...formData, alert_type: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition-colors"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 >
                   {alertTypes.map((type) => (
                     <option key={type.value} value={type.value}>{type.label}</option>
@@ -355,7 +355,7 @@ const AlertModal = ({ config, alertTypes, onClose, onSave }) => {
                 <select
                   value={formData.severity}
                   onChange={(e) => setFormData({ ...formData, severity: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition-colors"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 >
                   <option value="info">Info</option>
                   <option value="warning">Warning</option>
@@ -374,12 +374,72 @@ const AlertModal = ({ config, alertTypes, onClose, onSave }) => {
                       type="checkbox"
                       checked={formData.channels.includes(channel)}
                       onChange={() => toggleChannel(channel)}
-                      className="rounded border-gray-300 text-lime-600 focus:ring-lime-500"
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     <span className="capitalize text-sm font-medium text-gray-700">{channel.replace('_', ' ')}</span>
                   </label>
                 ))}
               </div>
+
+              {formData.channels.includes('email') && (
+                <div className="mt-3 p-3 bg-gray-50 rounded-xl">
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Email Recipients</label>
+                  <input
+                    type="text"
+                    value={formData.channel_config?.email?.recipients?.join(', ') || ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      channel_config: {
+                        ...formData.channel_config,
+                        email: { recipients: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }
+                      }
+                    })}
+                    placeholder="email1@example.com, email2@example.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Comma-separated email addresses</p>
+                </div>
+              )}
+
+              {formData.channels.includes('slack') && (
+                <div className="mt-3 p-3 bg-gray-50 rounded-xl">
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Slack Webhook URL</label>
+                  <input
+                    type="url"
+                    value={formData.channel_config?.slack?.webhook_url || ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      channel_config: {
+                        ...formData.channel_config,
+                        slack: { webhook_url: e.target.value }
+                      }
+                    })}
+                    placeholder="https://hooks.slack.com/services/..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Create an incoming webhook in your Slack workspace</p>
+                </div>
+              )}
+
+              {formData.channels.includes('webhook') && (
+                <div className="mt-3 p-3 bg-gray-50 rounded-xl">
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Webhook URL</label>
+                  <input
+                    type="url"
+                    value={formData.channel_config?.webhook?.url || ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      channel_config: {
+                        ...formData.channel_config,
+                        webhook: { ...formData.channel_config?.webhook, url: e.target.value }
+                      }
+                    })}
+                    placeholder="https://your-api.com/webhook"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Your custom webhook endpoint to receive alert payloads</p>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -389,7 +449,7 @@ const AlertModal = ({ config, alertTypes, onClose, onSave }) => {
                   type="number"
                   value={formData.cooldown_minutes}
                   onChange={(e) => setFormData({ ...formData, cooldown_minutes: parseInt(e.target.value) })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition-colors"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                   min="1"
                 />
               </div>
@@ -400,7 +460,7 @@ const AlertModal = ({ config, alertTypes, onClose, onSave }) => {
                   type="number"
                   value={formData.max_alerts_per_hour}
                   onChange={(e) => setFormData({ ...formData, max_alerts_per_hour: parseInt(e.target.value) })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition-colors"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                   min="1"
                 />
               </div>
@@ -412,7 +472,7 @@ const AlertModal = ({ config, alertTypes, onClose, onSave }) => {
                 id="group_similar"
                 checked={formData.group_similar}
                 onChange={(e) => setFormData({ ...formData, group_similar: e.target.checked })}
-                className="rounded border-gray-300 text-lime-600 focus:ring-lime-500"
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               <label htmlFor="group_similar" className="text-sm font-medium text-gray-700">Group similar alerts</label>
             </div>

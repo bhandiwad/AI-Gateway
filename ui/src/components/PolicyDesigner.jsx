@@ -18,20 +18,30 @@ import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 
 const PROCESSOR_TYPES = [
-  { id: 'pii_detection', name: 'PII Detector', desc: 'Detects and redacts personal information', phase: 'request' },
-  { id: 'toxicity_filter', name: 'Toxicity Filter', desc: 'Blocks harmful or offensive content', phase: 'both' },
-  { id: 'prompt_injection', name: 'Prompt Injection Guard', desc: 'Prevents prompt injection attacks', phase: 'request' },
-  { id: 'jailbreak_detector', name: 'Jailbreak Detector', desc: 'Detects attempts to bypass AI safety', phase: 'request' },
-  { id: 'financial_advice', name: 'Financial Advice Guard', desc: 'Flags investment/financial advice', phase: 'response' },
-  { id: 'confidential_data', name: 'Confidential Data Filter', desc: 'Prevents disclosure of sensitive data', phase: 'response' },
-  { id: 'rate_limiter', name: 'Rate Limiter', desc: 'Enforces request rate limits', phase: 'request' },
-  { id: 'content_filter', name: 'Content Filter', desc: 'Custom keyword filtering', phase: 'both' },
-  { id: 'output_validator', name: 'Output Validator', desc: 'Validates response format', phase: 'response' },
-  { id: 'cost_guard', name: 'Cost Guard', desc: 'Limits token/cost per request', phase: 'request' },
-  { id: 'topic_filter', name: 'Topic Filter', desc: 'Block specific topics (medical, legal, financial)', phase: 'both' },
-  { id: 'bias_detection', name: 'Bias Detection', desc: 'Detect biased or discriminatory content', phase: 'response' },
-  { id: 'hallucination_check', name: 'Hallucination Check', desc: 'Detect potentially hallucinated responses', phase: 'response' },
-  { id: 'external_provider', name: 'External Provider', desc: 'Use external guardrails (OpenAI, AWS, Azure, Google)', phase: 'both', isExternal: true }
+  // Basic Security
+  { id: 'pii_detection', name: 'PII Detector', desc: 'Detects and redacts personal information', phase: 'request', category: 'security' },
+  { id: 'toxicity_filter', name: 'Toxicity Filter', desc: 'Blocks harmful or offensive content', phase: 'both', category: 'security' },
+  { id: 'prompt_injection', name: 'Prompt Injection Guard', desc: 'Prevents prompt injection attacks', phase: 'request', category: 'security' },
+  { id: 'topic_filter', name: 'Topic Filter', desc: 'Block specific topics (medical, legal, financial)', phase: 'both', category: 'security' },
+  // Compliance Frameworks
+  { id: 'dpdp_compliance', name: 'DPDP Compliance (India)', desc: 'Aadhaar, PAN, Passport, Voter ID, UPI detection', phase: 'request', category: 'compliance' },
+  { id: 'gdpr_compliance', name: 'GDPR Compliance (EU)', desc: 'EU personal data protection', phase: 'request', category: 'compliance' },
+  { id: 'hipaa_compliance', name: 'HIPAA Compliance (Healthcare)', desc: 'Protected Health Information detection', phase: 'request', category: 'compliance' },
+  { id: 'pci_dss_compliance', name: 'PCI-DSS Compliance (Financial)', desc: 'Credit card and payment data protection', phase: 'request', category: 'compliance' },
+  // Advanced Security
+  { id: 'secrets_detection', name: 'Secrets Detection', desc: 'Detect API keys, tokens, credentials', phase: 'request', category: 'advanced' },
+  { id: 'code_detection', name: 'Code Detection', desc: 'Detect code snippets and SQL queries', phase: 'both', category: 'advanced' },
+  { id: 'data_residency', name: 'Data Residency Check', desc: 'Flag cross-border data transfer concerns', phase: 'request', category: 'advanced' },
+  { id: 'consent_check', name: 'Consent Check', desc: 'Verify consent for data processing', phase: 'request', category: 'advanced' },
+  // Response Filters
+  { id: 'financial_advice', name: 'Financial Advice Guard', desc: 'Flags investment/financial advice', phase: 'response', category: 'response' },
+  { id: 'confidential_data', name: 'Confidential Data Filter', desc: 'Prevents disclosure of sensitive data', phase: 'response', category: 'response' },
+  { id: 'bias_detection', name: 'Bias Detection', desc: 'Detect biased or discriminatory content', phase: 'response', category: 'response' },
+  { id: 'hallucination_check', name: 'Hallucination Check', desc: 'Detect potentially hallucinated responses', phase: 'response', category: 'response' },
+  // Other
+  { id: 'rate_limiter', name: 'Rate Limiter', desc: 'Enforces request rate limits', phase: 'request', category: 'other' },
+  { id: 'content_filter', name: 'Content Filter', desc: 'Custom keyword filtering', phase: 'both', category: 'other' },
+  { id: 'external_provider', name: 'External Provider', desc: 'Use external guardrails (OpenAI, AWS, Azure, Google)', phase: 'both', isExternal: true, category: 'other' }
 ];
 
 const EXTERNAL_PROVIDER_TYPES = [
@@ -327,20 +337,67 @@ export default function PolicyDesigner({ onProfileSelect }) {
                 Add
               </button>
               {openDropdown === phase && (
-                <div className="absolute right-0 top-full mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                  {availableProcessors.map(processor => (
+                <div className="absolute right-0 top-full mt-1 w-72 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-80 overflow-y-auto">
+                  <div className="sticky top-0 bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-600 border-b">Security</div>
+                  {availableProcessors.filter(p => p.category === 'security').map(processor => (
                     <button
                       key={processor.id}
                       onClick={() => {
                         addProcessor(phase, processor.id);
                         setOpenDropdown(null);
                       }}
-                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
+                      className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 border-b border-gray-100"
                     >
                       <div className="font-medium text-gray-900">{processor.name}</div>
                       <div className="text-xs text-gray-500">{processor.desc}</div>
                     </button>
                   ))}
+                  <div className="sticky top-0 bg-orange-100 px-3 py-1.5 text-xs font-semibold text-orange-700 border-b">Compliance</div>
+                  {availableProcessors.filter(p => p.category === 'compliance').map(processor => (
+                    <button
+                      key={processor.id}
+                      onClick={() => {
+                        addProcessor(phase, processor.id);
+                        setOpenDropdown(null);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm hover:bg-orange-50 border-b border-gray-100"
+                    >
+                      <div className="font-medium text-gray-900">{processor.name}</div>
+                      <div className="text-xs text-gray-500">{processor.desc}</div>
+                    </button>
+                  ))}
+                  <div className="sticky top-0 bg-purple-100 px-3 py-1.5 text-xs font-semibold text-purple-700 border-b">Advanced</div>
+                  {availableProcessors.filter(p => p.category === 'advanced').map(processor => (
+                    <button
+                      key={processor.id}
+                      onClick={() => {
+                        addProcessor(phase, processor.id);
+                        setOpenDropdown(null);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm hover:bg-purple-50 border-b border-gray-100"
+                    >
+                      <div className="font-medium text-gray-900">{processor.name}</div>
+                      <div className="text-xs text-gray-500">{processor.desc}</div>
+                    </button>
+                  ))}
+                  {availableProcessors.filter(p => p.category === 'response' || p.category === 'other').length > 0 && (
+                    <>
+                      <div className="sticky top-0 bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-600 border-b">Other</div>
+                      {availableProcessors.filter(p => p.category === 'response' || p.category === 'other').map(processor => (
+                        <button
+                          key={processor.id}
+                          onClick={() => {
+                            addProcessor(phase, processor.id);
+                            setOpenDropdown(null);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                        >
+                          <div className="font-medium text-gray-900">{processor.name}</div>
+                          <div className="text-xs text-gray-500">{processor.desc}</div>
+                        </button>
+                      ))}
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -535,7 +592,7 @@ export default function PolicyDesigner({ onProfileSelect }) {
           </div>
         </div>
 
-        <div className="lg:col-span-2 bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+        <div className="lg:col-span-2 bg-white border border-gray-200 rounded-lg shadow-sm">
           {selectedProfile ? (
             <>
               <div className="p-4 border-b bg-gray-50 flex items-center justify-between">
@@ -607,7 +664,10 @@ export default function PolicyDesigner({ onProfileSelect }) {
       </div>
 
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50"
+          style={{ backgroundColor: 'rgba(0,0,0,0.35)' }}
+        >
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Create Guardrail Profile</h3>
             
@@ -665,7 +725,10 @@ export default function PolicyDesigner({ onProfileSelect }) {
       )}
 
       {externalProviderModal.open && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50"
+          style={{ backgroundColor: 'rgba(0,0,0,0.35)' }}
+        >
           <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Add External Guardrail Provider</h3>
             <p className="text-sm text-gray-600 mb-4">

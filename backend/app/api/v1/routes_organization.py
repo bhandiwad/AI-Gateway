@@ -29,7 +29,7 @@ async def create_department(
     """Create a new department."""
     return organization_service.create_department(
         db=db,
-        tenant_id=current_user.tenant_id,
+        tenant_id=current_user["sub"],
         department_data=department
     )
 
@@ -46,7 +46,7 @@ async def list_departments(
     """List all departments."""
     return organization_service.list_departments(
         db=db,
-        tenant_id=current_user.tenant_id,
+        tenant_id=current_user["sub"],
         skip=skip,
         limit=limit,
         is_active=is_active
@@ -64,7 +64,7 @@ async def get_department(
     department = organization_service.get_department_stats(
         db=db,
         department_id=department_id,
-        tenant_id=current_user.tenant_id
+        tenant_id=current_user["sub"]
     )
     if not department:
         raise HTTPException(
@@ -86,7 +86,7 @@ async def update_department(
     department = organization_service.update_department(
         db=db,
         department_id=department_id,
-        tenant_id=current_user.tenant_id,
+        tenant_id=current_user["sub"],
         update_data=department_update
     )
     if not department:
@@ -108,7 +108,7 @@ async def delete_department(
     success = organization_service.delete_department(
         db=db,
         department_id=department_id,
-        tenant_id=current_user.tenant_id
+        tenant_id=current_user["sub"]
     )
     if not success:
         raise HTTPException(
@@ -130,7 +130,7 @@ async def create_team(
     """Create a new team."""
     return organization_service.create_team(
         db=db,
-        tenant_id=current_user.tenant_id,
+        tenant_id=current_user["sub"],
         team_data=team
     )
 
@@ -148,7 +148,7 @@ async def list_teams(
     """List all teams."""
     return organization_service.list_teams(
         db=db,
-        tenant_id=current_user.tenant_id,
+        tenant_id=current_user["sub"],
         department_id=department_id,
         skip=skip,
         limit=limit,
@@ -167,7 +167,7 @@ async def get_team(
     team = organization_service.get_team_stats(
         db=db,
         team_id=team_id,
-        tenant_id=current_user.tenant_id
+        tenant_id=current_user["sub"]
     )
     if not team:
         raise HTTPException(
@@ -189,7 +189,7 @@ async def update_team(
     team = organization_service.update_team(
         db=db,
         team_id=team_id,
-        tenant_id=current_user.tenant_id,
+        tenant_id=current_user["sub"],
         update_data=team_update
     )
     if not team:
@@ -211,7 +211,7 @@ async def delete_team(
     success = organization_service.delete_team(
         db=db,
         team_id=team_id,
-        tenant_id=current_user.tenant_id
+        tenant_id=current_user["sub"]
     )
     if not success:
         raise HTTPException(
@@ -236,7 +236,7 @@ async def add_team_member(
         db=db,
         team_id=team_id,
         user_id=member.user_id,
-        tenant_id=current_user.tenant_id,
+        tenant_id=current_user["sub"],
         role=member.role
     )
     if not success:
@@ -260,7 +260,7 @@ async def remove_team_member(
         db=db,
         team_id=team_id,
         user_id=member.user_id,
-        tenant_id=current_user.tenant_id
+        tenant_id=current_user["sub"]
     )
     if not success:
         raise HTTPException(
@@ -281,7 +281,7 @@ async def list_team_members(
     members = organization_service.list_team_members(
         db=db,
         team_id=team_id,
-        tenant_id=current_user.tenant_id
+        tenant_id=current_user["sub"]
     )
     return members
 
@@ -297,5 +297,5 @@ async def get_organization_stats(
     """Get organization-wide statistics."""
     return organization_service.get_organization_stats(
         db=db,
-        tenant_id=current_user.tenant_id
+        tenant_id=current_user["sub"]
     )

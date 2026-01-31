@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block announce %}
+<a id="back-to-app" href="#" class="back-to-app-link">
+  ← App
+</a>
+<script>
+  document.getElementById('back-to-app').href = window.location.protocol + '//' + window.location.hostname;
+</script>
+{% endblock %}

@@ -18,6 +18,7 @@ import RouterConfig from './pages/RouterConfig';
 import Users from './pages/Users';
 import Organization from './pages/Organization';
 import Alerts from './pages/Alerts';
+import Stats from './pages/Stats';
 import { Menu, X } from 'lucide-react';
 
 const MobileMenuContext = createContext();
@@ -196,6 +197,14 @@ function AppRoutes() {
         <PrivateRoute>
           <AppLayout>
             <Alerts />
+          </AppLayout>
+        </PrivateRoute>
+      } />
+      
+      <Route path="/stats" element={
+        <PrivateRoute>
+          <AppLayout>
+            <Stats />
           </AppLayout>
         </PrivateRoute>
       } />

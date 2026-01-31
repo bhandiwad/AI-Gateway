@@ -23,11 +23,11 @@ export default function Header({ title }) {
           <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
         </button>
         
-        {user && (
+        {user && user.monthly_budget > 0 && (
           <div className="hidden sm:flex items-center gap-2 text-sm">
             <span className="text-gray-500">Budget:</span>
             <span className="font-medium">
-              ₹{((user.current_spend || 0) * 83.5).toLocaleString('en-IN', {maximumFractionDigits: 0})} / ₹{((user.monthly_budget || 0) * 83.5).toLocaleString('en-IN', {maximumFractionDigits: 0})}
+              ₹{((user.current_spend || 0) * 83.5).toLocaleString('en-IN', {maximumFractionDigits: 0})} / ₹{(user.monthly_budget * 83.5).toLocaleString('en-IN', {maximumFractionDigits: 0})}
             </span>
           </div>
         )}

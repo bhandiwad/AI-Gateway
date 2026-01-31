@@ -1,6 +1,7 @@
 from typing import Optional, List
+from pydantic import BaseModel
 from datetime import timedelta
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Body
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
@@ -127,6 +128,9 @@ async def get_current_tenant(
         tenant_data["name"] = user.name
         tenant_data["email"] = user.email
         tenant_data["user_id"] = user.id
+        tenant_data["rate_limit"] = user.rate_limit
+        tenant_data["monthly_budget"] = user.monthly_budget
+        tenant_data["current_spend"] = user.current_spend
     
     return tenant_data
 
@@ -461,3 +465,195 @@ async def sso_callback(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
+
+
+@router.get("/cache/stats")
+async def get_cache_stats(
+    current_user: dict = Depends(get_user_from_token)
+):
+    """Get semantic cache statistics including tokens saved."""
+    from backend.app.core.config import settings
+    
+    if not settings.ENABLE_SEMANTIC_CACHE:
+        return {
+            "enabled": False,
+            "message": "Semantic cache is not enabled",
+            "hits": 0,
+            "misses": 0,
+            "tokens_saved": 0,
+            "cost_saved_inr": 0
+        }
+    
+    from backend.app.services.semantic_cache_service import semantic_cache
+    stats = semantic_cache.get_stats()
+    stats["enabled"] = True
+    return stats
+
+
+@router.delete("/cache/clear")
+async def clear_all_cache(
+    current_user: dict = Depends(get_user_from_token)
+):
+    """Clear all cached entries."""
+    from backend.app.core.config import settings
+    
+    if not settings.ENABLE_SEMANTIC_CACHE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Semantic cache is not enabled"
+        )
+    
+    from backend.app.services.semantic_cache_service import semantic_cache
+    await semantic_cache.clear_all()
+    return {"message": "Cache cleared successfully"}
+
+
+@router.get("/stats/detailed")
+async def get_detailed_stats(
+    days: int = Query(30, ge=1, le=365),
+    current_user: dict = Depends(get_user_from_token),
+    db: Session = Depends(get_db)
+):
+    """Get comprehensive usage statistics."""
+    tenant_id = current_user.get("tenant_id")
+    if not tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tenant ID not found"
+        )
+    
+    return usage_service.get_detailed_stats(db, tenant_id, days)
+
+
+@router.post("/guardrails/scan-file")
+async def scan_file_for_guardrails(
+    file: UploadFile = File(...),
+    profile_id: Optional[int] = Query(None, description="Guardrail profile ID to use"),
+    current_user: dict = Depends(get_user_from_token),
+    db: Session = Depends(get_db)
+):
+    """
+    Scan an uploaded file for guardrail violations.
+    
+    Supports: PDF, DOCX, TXT, CSV, JSON, and image files (with OCR).
+    Returns extracted text and any detected violations.
+    """
+    from backend.app.services.file_guardrails_service import apply_file_guardrails
+    from backend.app.db.models.provider_config import GuardrailProfile
+    
+    tenant_id = current_user.get("tenant_id")
+    if not tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tenant ID not found"
+        )
+    
+    # Get guardrail profile
+    profile = None
+    if profile_id:
+        profile = db.query(GuardrailProfile).filter(
+            GuardrailProfile.id == profile_id,
+            GuardrailProfile.tenant_id == tenant_id
+        ).first()
+        if not profile:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Guardrail profile not found"
+            )
+    else:
+        # Use default profile if available
+        profile = db.query(GuardrailProfile).filter(
+            GuardrailProfile.tenant_id == tenant_id,
+            GuardrailProfile.is_default == True
+        ).first()
+    
+    if not profile:
+        return {
+            "passed": True,
+            "message": "No guardrail profile configured - file not scanned",
+            "file_name": file.filename,
+            "file_type": file.content_type
+        }
+    
+    # Read file content
+    file_content = await file.read()
+    
+    # Apply guardrails
+    result = apply_file_guardrails(
+        file_content=file_content,
+        file_type=file.content_type or "",
+        profile=profile,
+        tenant_id=tenant_id,
+        filename=file.filename
+    )
+    
+    return {
+        "passed": result.passed,
+        "message": result.message,
+        "action": result.action,
+        "file_name": file.filename,
+        "file_type": result.file_type,
+        "extracted_text_preview": result.extracted_text,
+        "detected_issues": result.detected_issues,
+        "redacted_content": result.redacted_content
+    }
+
+
+@router.post("/guardrails/scan-base64")
+async def scan_base64_for_guardrails(
+    content: str = Body(..., description="Base64-encoded file content"),
+    content_type: str = Body(..., description="MIME type of the file"),
+    filename: Optional[str] = Body(None, description="Original filename"),
+    profile_id: Optional[int] = Body(None, description="Guardrail profile ID to use"),
+    current_user: dict = Depends(get_user_from_token),
+    db: Session = Depends(get_db)
+):
+    """
+    Scan base64-encoded file content for guardrail violations.
+    Useful for scanning files before including them in chat messages.
+    """
+    from backend.app.services.file_guardrails_service import scan_base64_content
+    from backend.app.db.models.provider_config import GuardrailProfile
+    
+    tenant_id = current_user.get("tenant_id")
+    if not tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tenant ID not found"
+        )
+    
+    # Get guardrail profile
+    profile = None
+    if profile_id:
+        profile = db.query(GuardrailProfile).filter(
+            GuardrailProfile.id == profile_id,
+            GuardrailProfile.tenant_id == tenant_id
+        ).first()
+    else:
+        profile = db.query(GuardrailProfile).filter(
+            GuardrailProfile.tenant_id == tenant_id,
+            GuardrailProfile.is_default == True
+        ).first()
+    
+    if not profile:
+        return {
+            "passed": True,
+            "message": "No guardrail profile configured - content not scanned",
+            "content_type": content_type
+        }
+    
+    result = scan_base64_content(
+        base64_data=content,
+        content_type=content_type,
+        profile=profile,
+        tenant_id=tenant_id
+    )
+    
+    return {
+        "passed": result.passed,
+        "message": result.message,
+        "action": result.action,
+        "file_type": result.file_type,
+        "extracted_text_preview": result.extracted_text,
+        "detected_issues": result.detected_issues
+    }

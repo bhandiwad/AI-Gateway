@@ -34,7 +34,7 @@ async def create_external_provider(
 ):
     """Create a new external guardrail provider."""
     provider = ExternalGuardrailProvider(
-        tenant_id=current_user.tenant_id if not provider_data.is_global else None,
+        tenant_id=current_user["sub"] if not provider_data.is_global else None,
         name=provider_data.name,
         provider_type=provider_data.provider_type,
         description=provider_data.description,
@@ -82,7 +82,7 @@ async def create_external_provider(
         "external_guardrail_provider_created",
         provider_id=provider.id,
         provider_type=provider.provider_type,
-        tenant_id=current_user.tenant_id
+        tenant_id=current_user["sub"]
     )
     
     return provider
@@ -96,7 +96,7 @@ async def list_external_providers(
 ):
     """List all external guardrail providers."""
     providers = db.query(ExternalGuardrailProvider).filter(
-        (ExternalGuardrailProvider.tenant_id == current_user.tenant_id) |
+        (ExternalGuardrailProvider.tenant_id == current_user["sub"]) |
         (ExternalGuardrailProvider.is_global == True)
     ).all()
     
@@ -113,7 +113,7 @@ async def get_external_provider(
     """Get external guardrail provider by ID."""
     provider = db.query(ExternalGuardrailProvider).filter(
         ExternalGuardrailProvider.id == provider_id,
-        (ExternalGuardrailProvider.tenant_id == current_user.tenant_id) |
+        (ExternalGuardrailProvider.tenant_id == current_user["sub"]) |
         (ExternalGuardrailProvider.is_global == True)
     ).first()
     
@@ -137,7 +137,7 @@ async def update_external_provider(
     """Update external guardrail provider."""
     provider = db.query(ExternalGuardrailProvider).filter(
         ExternalGuardrailProvider.id == provider_id,
-        ExternalGuardrailProvider.tenant_id == current_user.tenant_id
+        ExternalGuardrailProvider.tenant_id == current_user["sub"]
     ).first()
     
     if not provider:
@@ -159,7 +159,7 @@ async def update_external_provider(
     logger.info(
         "external_guardrail_provider_updated",
         provider_id=provider_id,
-        tenant_id=current_user.tenant_id
+        tenant_id=current_user["sub"]
     )
     
     return provider
@@ -175,7 +175,7 @@ async def delete_external_provider(
     """Delete external guardrail provider."""
     provider = db.query(ExternalGuardrailProvider).filter(
         ExternalGuardrailProvider.id == provider_id,
-        ExternalGuardrailProvider.tenant_id == current_user.tenant_id
+        ExternalGuardrailProvider.tenant_id == current_user["sub"]
     ).first()
     
     if not provider:
@@ -192,7 +192,7 @@ async def delete_external_provider(
     logger.info(
         "external_guardrail_provider_deleted",
         provider_id=provider_id,
-        tenant_id=current_user.tenant_id
+        tenant_id=current_user["sub"]
     )
     
     return {"message": "Provider deleted successfully"}
@@ -211,7 +211,7 @@ async def test_external_provider(
     """Test an external guardrail provider with sample text."""
     provider = db.query(ExternalGuardrailProvider).filter(
         ExternalGuardrailProvider.id == provider_id,
-        (ExternalGuardrailProvider.tenant_id == current_user.tenant_id) |
+        (ExternalGuardrailProvider.tenant_id == current_user["sub"]) |
         (ExternalGuardrailProvider.is_global == True)
     ).first()
     
@@ -289,7 +289,7 @@ async def health_check_all_providers(
     health_results = await guardrail_provider_manager.health_check_all()
     
     providers = db.query(ExternalGuardrailProvider).filter(
-        (ExternalGuardrailProvider.tenant_id == current_user.tenant_id) |
+        (ExternalGuardrailProvider.tenant_id == current_user["sub"]) |
         (ExternalGuardrailProvider.is_global == True)
     ).all()
     

@@ -1,0 +1,59 @@
+/* InfinitAI Lime Green Theme */
+:root {
+  --md-primary-fg-color: #7CB342;
+  --md-primary-fg-color--light: #9CCC65;
+  --md-primary-fg-color--dark: #558B2F;
+  --md-accent-fg-color: #C0CA33;
+}
+
+/* Back to App Link */
+.md-banner {
+  background: var(--md-primary-fg-color--dark);
+  padding: 0.3rem 0;
+}
+
+.back-to-app-link {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  color: white !important;
+  text-decoration: none;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 3px;
+  transition: opacity 0.2s;
+}
+
+.back-to-app-link:hover {
+  opacity: 0.8;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #9CCC65;
+  --md-primary-fg-color--light: #C5E1A5;
+  --md-primary-fg-color--dark: #7CB342;
+  --md-accent-fg-color: #CDDC39;
+}
+
+/* Header styling */
+.md-header {
+  background-color: var(--md-primary-fg-color);
+}
+
+/* Navigation tabs */
+.md-tabs {
+  background-color: var(--md-primary-fg-color--dark);
+}
+
+/* Links */
+.md-typeset a {
+  color: var(--md-primary-fg-color--dark);
+}
+
+.md-typeset a:hover {
+  color: var(--md-accent-fg-color);
+}
+
+/* Logo styling */
+.md-header__button.md-logo img {
+  height: 32px;
+}

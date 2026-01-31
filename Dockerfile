@@ -6,6 +6,8 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
     postgresql-client \
+    tesseract-ocr \
+    tesseract-ocr-eng \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml uv.lock ./

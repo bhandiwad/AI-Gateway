@@ -429,7 +429,30 @@ export default function Guardrails() {
           )}
 
           {activeTab === 'templates' && enterpriseInfo && (
-            <TemplatesTab enterpriseInfo={enterpriseInfo} />
+            <TemplatesTab 
+              enterpriseInfo={enterpriseInfo} 
+              onApplyTemplate={async (template) => {
+                try {
+                  const profileData = {
+                    name: template.name,
+                    description: template.description,
+                    is_enabled: true,
+                    request_processors: template.processors.map(p => ({
+                      type: p.type,
+                      name: p.name,
+                      config: p.config || {}
+                    })),
+                    response_processors: []
+                  };
+                  await saveProfile(profileData);
+                  setActiveTab('profiles');
+                  alert(`Profile "${template.name}" created successfully!`);
+                } catch (err) {
+                  console.error('Failed to apply template:', err);
+                  alert('Failed to create profile from template');
+                }
+              }}
+            />
           )}
 
           {activeTab === 'test' && (
@@ -850,7 +873,102 @@ function ProviderCard({ provider, healthStatus, onEdit, onDelete, onTest }) {
   );
 }
 
-function TemplatesTab({ enterpriseInfo }) {
+function TemplatesTab({ enterpriseInfo, onApplyTemplate }) {
+  const templates = [
+    // Compliance Framework Templates
+    {
+      id: 'dpdp_india',
+      name: 'DPDP Act (India)',
+      description: 'Digital Personal Data Protection Act compliance - Aadhaar, PAN, Passport, Voter ID, UPI',
+      processors: [
+        { type: 'dpdp_compliance', name: 'DPDP Compliance', config: { action: 'redact' } },
+        { type: 'secrets_detection', name: 'Secrets Detection', config: {} }
+      ],
+      color: 'orange',
+      framework: 'DPDP'
+    },
+    {
+      id: 'gdpr_eu',
+      name: 'GDPR (EU)',
+      description: 'General Data Protection Regulation - EU personal data, consent tracking, data residency',
+      processors: [
+        { type: 'gdpr_compliance', name: 'GDPR Compliance', config: { action: 'redact' } },
+        { type: 'consent_check', name: 'Consent Check', config: {} },
+        { type: 'data_residency', name: 'Data Residency', config: {} }
+      ],
+      color: 'blue',
+      framework: 'GDPR'
+    },
+    {
+      id: 'hipaa_healthcare',
+      name: 'HIPAA (Healthcare)',
+      description: 'US Healthcare compliance - PHI protection, medical records, NPI detection',
+      processors: [
+        { type: 'hipaa_compliance', name: 'HIPAA Compliance', config: { action: 'block' } },
+        { type: 'topic_filter', name: 'Medical Advice Filter', config: { blocked_topics: ['medical_advice'] } }
+      ],
+      color: 'red',
+      framework: 'HIPAA'
+    },
+    {
+      id: 'pci_dss_financial',
+      name: 'PCI-DSS (Financial)',
+      description: 'Payment Card Industry compliance - credit cards, CVV, bank accounts',
+      processors: [
+        { type: 'pci_dss_compliance', name: 'PCI-DSS Compliance', config: { action: 'block' } },
+        { type: 'secrets_detection', name: 'Secrets Detection', config: {} }
+      ],
+      color: 'purple',
+      framework: 'PCI-DSS'
+    },
+    // Security Templates
+    {
+      id: 'security_hardened',
+      name: 'Security Hardened',
+      description: 'Prevent prompt injection, detect secrets, block malicious content',
+      processors: [
+        { type: 'prompt_injection', name: 'Prompt Injection Detection', config: {} },
+        { type: 'secrets_detection', name: 'Secrets Detection', config: { action: 'block' } },
+        { type: 'code_detection', name: 'Code Detection', config: {} }
+      ],
+      color: 'red'
+    },
+    {
+      id: 'content_moderation',
+      name: 'Content Moderation',
+      description: 'Filter toxic, harmful, and inappropriate content',
+      processors: [
+        { type: 'toxicity_filter', name: 'Toxicity Filter', config: {} },
+        { type: 'topic_filter', name: 'Topic Filter', config: { blocked_topics: ['violence', 'adult'] } }
+      ],
+      color: 'yellow'
+    },
+    // Industry Templates
+    {
+      id: 'enterprise_full',
+      name: 'Enterprise Full Suite',
+      description: 'Comprehensive protection: PII, injection, secrets, toxicity, code leakage',
+      processors: [
+        { type: 'pii_detection', name: 'PII Detection', config: { action: 'redact' } },
+        { type: 'prompt_injection', name: 'Prompt Injection Detection', config: {} },
+        { type: 'secrets_detection', name: 'Secrets Detection', config: { action: 'block' } },
+        { type: 'toxicity_filter', name: 'Toxicity Filter', config: {} },
+        { type: 'code_detection', name: 'Code Detection', config: {} }
+      ],
+      color: 'indigo'
+    },
+    {
+      id: 'developer_safe',
+      name: 'Developer Safe Mode',
+      description: 'For coding assistants - block secrets and credentials, allow code',
+      processors: [
+        { type: 'secrets_detection', name: 'Secrets Detection', config: { action: 'block' } },
+        { type: 'prompt_injection', name: 'Prompt Injection Detection', config: {} }
+      ],
+      color: 'green'
+    }
+  ];
+
   return (
     <div className="space-y-6">
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
@@ -860,7 +978,7 @@ function TemplatesTab({ enterpriseInfo }) {
           </div>
           <div>
             <h2 className="text-xl font-bold text-gray-900">Enterprise Compliance Templates</h2>
-            <p className="text-gray-600">Pre-built guardrail configurations for common compliance requirements</p>
+            <p className="text-gray-600">Pre-built guardrail configurations - click "Apply" to create a profile</p>
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
@@ -880,6 +998,36 @@ function TemplatesTab({ enterpriseInfo }) {
             <p className="text-2xl font-bold text-gray-900">{enterpriseInfo.compliance_frameworks?.length || 0}</p>
             <p className="text-sm text-gray-600">Frameworks</p>
           </div>
+        </div>
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+        <h3 className="font-semibold mb-4">Quick Start Templates</h3>
+        <p className="text-sm text-gray-600 mb-4">Click "Apply" to create a new guardrail profile with the selected template configuration.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {templates.map((template) => (
+            <div key={template.id} className={`border rounded-xl p-4 bg-${template.color}-50 border-${template.color}-200`}>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h4 className="font-semibold text-gray-900">{template.name}</h4>
+                  <p className="text-sm text-gray-600 mt-1">{template.description}</p>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {template.processors.map((p, idx) => (
+                      <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs">
+                        {p.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  onClick={() => onApplyTemplate && onApplyTemplate(template)}
+                  className="ml-3 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -1098,12 +1246,25 @@ function ProfileModal({ profile, onClose, onSave }) {
   const [saving, setSaving] = useState(false);
 
   const processorTypes = [
+    // Basic Security
     { value: 'pii_detection', label: 'PII Detection', description: 'Detect and redact personal information' },
     { value: 'toxicity_filter', label: 'Toxicity Filter', description: 'Block toxic or harmful content' },
     { value: 'prompt_injection', label: 'Prompt Injection Detection', description: 'Detect malicious prompt injections' },
-    { value: 'jailbreak_detection', label: 'Jailbreak Detection', description: 'Prevent model jailbreaks' },
-    { value: 'content_classification', label: 'Content Classification', description: 'Classify content by category' },
-    { value: 'rate_limiting', label: 'Rate Limiting', description: 'Apply request rate limits' },
+    { value: 'topic_filter', label: 'Topic Filter', description: 'Block specific topics (medical, legal, financial)' },
+    // Compliance Frameworks
+    { value: 'dpdp_compliance', label: 'DPDP Compliance (India)', description: 'Aadhaar, PAN, Passport, Voter ID, UPI detection' },
+    { value: 'gdpr_compliance', label: 'GDPR Compliance (EU)', description: 'EU personal data protection' },
+    { value: 'hipaa_compliance', label: 'HIPAA Compliance (Healthcare)', description: 'Protected Health Information detection' },
+    { value: 'pci_dss_compliance', label: 'PCI-DSS Compliance (Financial)', description: 'Credit card and payment data protection' },
+    // Advanced Security
+    { value: 'secrets_detection', label: 'Secrets Detection', description: 'Detect API keys, tokens, credentials' },
+    { value: 'code_detection', label: 'Code Detection', description: 'Detect code snippets and SQL queries' },
+    { value: 'data_residency', label: 'Data Residency Check', description: 'Flag cross-border data transfer concerns' },
+    { value: 'consent_check', label: 'Consent Check', description: 'Verify consent for data processing' },
+    // Other
+    { value: 'bias_detection', label: 'Bias Detection', description: 'Detect biased content' },
+    { value: 'hallucination_check', label: 'Hallucination Check', description: 'Detect potential hallucinations (response)' },
+    { value: 'external_provider', label: 'External Provider', description: 'Use external guardrail service' },
   ];
 
   const handleSubmit = async (e) => {
@@ -1114,44 +1275,133 @@ function ProfileModal({ profile, onClose, onSave }) {
   };
 
   const addProcessor = (stage) => {
-    const newProcessor = { type: 'pii_detection', name: 'New Processor', config: {} };
-    if (stage === 'request') {
-      setFormData({ ...formData, request_processors: [...formData.request_processors, newProcessor] });
-    } else {
-      setFormData({ ...formData, response_processors: [...formData.response_processors, newProcessor] });
-    }
+    const defaultType = processorTypes[0];
+    const newProcessor = { 
+      type: defaultType.value, 
+      name: defaultType.label, 
+      description: defaultType.description,
+      config: {} 
+    };
+    // Use functional setState to avoid stale closure issues
+    setFormData(prev => {
+      if (stage === 'request') {
+        return { ...prev, request_processors: [...prev.request_processors, newProcessor] };
+      } else {
+        return { ...prev, response_processors: [...prev.response_processors, newProcessor] };
+      }
+    });
   };
 
   const removeProcessor = (stage, index) => {
-    if (stage === 'request') {
-      setFormData({ 
-        ...formData, 
-        request_processors: formData.request_processors.filter((_, i) => i !== index) 
-      });
-    } else {
-      setFormData({ 
-        ...formData, 
-        response_processors: formData.response_processors.filter((_, i) => i !== index) 
-      });
-    }
+    setFormData(prev => {
+      if (stage === 'request') {
+        return { ...prev, request_processors: prev.request_processors.filter((_, i) => i !== index) };
+      } else {
+        return { ...prev, response_processors: prev.response_processors.filter((_, i) => i !== index) };
+      }
+    });
   };
 
   const updateProcessor = (stage, index, field, value) => {
-    if (stage === 'request') {
-      const updated = [...formData.request_processors];
-      updated[index] = { ...updated[index], [field]: value };
-      setFormData({ ...formData, request_processors: updated });
-    } else {
-      const updated = [...formData.response_processors];
-      updated[index] = { ...updated[index], [field]: value };
-      setFormData({ ...formData, response_processors: updated });
-    }
+    setFormData(prev => {
+      if (stage === 'request') {
+        const updated = [...prev.request_processors];
+        updated[index] = { ...updated[index], [field]: value };
+        // Update name when type changes
+        if (field === 'type') {
+          const typeInfo = processorTypes.find(pt => pt.value === value);
+          if (typeInfo) {
+            updated[index].name = typeInfo.label;
+            updated[index].description = typeInfo.description;
+          }
+        }
+        return { ...prev, request_processors: updated };
+      } else {
+        const updated = [...prev.response_processors];
+        updated[index] = { ...updated[index], [field]: value };
+        // Update name when type changes
+        if (field === 'type') {
+          const typeInfo = processorTypes.find(pt => pt.value === value);
+          if (typeInfo) {
+            updated[index].name = typeInfo.label;
+            updated[index].description = typeInfo.description;
+          }
+        }
+        return { ...prev, response_processors: updated };
+      }
+    });
+  };
+
+  const getProcessorDescription = (type) => {
+    const pt = processorTypes.find(p => p.value === type);
+    return pt?.description || '';
+  };
+
+  const renderProcessorCard = (processor, idx, stage) => {
+    const bgColor = stage === 'request' ? 'bg-lime-50 border-lime-200' : 'bg-green-50 border-green-200';
+    return (
+      <div key={idx} className={`p-4 ${bgColor} rounded-xl border`}>
+        <div className="flex items-start gap-3">
+          <div className="flex-1 space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Processor Type</label>
+              <select
+                value={processor.type}
+                onChange={(e) => updateProcessor(stage, idx, 'type', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-lime-500 bg-white"
+              >
+                <optgroup label="Basic Security">
+                  {processorTypes.filter(pt => ['pii_detection', 'toxicity_filter', 'prompt_injection', 'topic_filter'].includes(pt.value)).map(pt => (
+                    <option key={pt.value} value={pt.value}>{pt.label}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Compliance Frameworks">
+                  {processorTypes.filter(pt => ['dpdp_compliance', 'gdpr_compliance', 'hipaa_compliance', 'pci_dss_compliance'].includes(pt.value)).map(pt => (
+                    <option key={pt.value} value={pt.value}>{pt.label}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Advanced Security">
+                  {processorTypes.filter(pt => ['secrets_detection', 'code_detection', 'data_residency', 'consent_check'].includes(pt.value)).map(pt => (
+                    <option key={pt.value} value={pt.value}>{pt.label}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Other">
+                  {processorTypes.filter(pt => ['bias_detection', 'hallucination_check', 'external_provider'].includes(pt.value)).map(pt => (
+                    <option key={pt.value} value={pt.value}>{pt.label}</option>
+                  ))}
+                </optgroup>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">{getProcessorDescription(processor.type)}</p>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Action on Detection</label>
+              <select
+                value={processor.config?.action || 'block'}
+                onChange={(e) => updateProcessor(stage, idx, 'config', { ...processor.config, action: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-lime-500 bg-white"
+              >
+                <option value="block">Block - Reject the request</option>
+                <option value="redact">Redact - Mask sensitive data</option>
+                <option value="warn">Warn - Log and allow</option>
+              </select>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => removeProcessor(stage, idx)}
+            className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+          >
+            <Trash2 size={18} />
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
-        <div className="p-6">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-2xl w-full shadow-xl my-8">
+        <div className="p-6 max-h-[85vh] overflow-y-auto">
           <h2 className="text-xl font-bold text-gray-900 mb-6">
             {profile ? 'Edit Profile' : 'Create Guardrail Profile'}
           </h2>
@@ -1190,77 +1440,43 @@ function ProfileModal({ profile, onClose, onSave }) {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-gray-700">Request Processors</label>
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-sm font-semibold text-gray-800">Request Processors</label>
                 <button
                   type="button"
                   onClick={() => addProcessor('request')}
-                  className="text-sm text-lime-600 hover:text-lime-700 font-medium flex items-center gap-1"
+                  className="text-sm text-lime-600 hover:text-lime-700 font-medium flex items-center gap-1 px-2 py-1 rounded hover:bg-lime-50"
                 >
-                  <Plus size={16} /> Add
+                  <Plus size={16} /> Add Processor
                 </button>
               </div>
-              <div className="space-y-2">
-                {formData.request_processors.map((processor, idx) => (
-                  <div key={idx} className="flex items-center gap-2 p-3 bg-lime-50 rounded-xl border border-lime-100">
-                    <select
-                      value={processor.type}
-                      onChange={(e) => updateProcessor('request', idx, 'type', e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-lime-500"
-                    >
-                      {processorTypes.map(pt => (
-                        <option key={pt.value} value={pt.value}>{pt.label}</option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => removeProcessor('request', idx)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                ))}
+              <div className="space-y-3">
+                {formData.request_processors.map((processor, idx) => renderProcessorCard(processor, idx, 'request'))}
                 {formData.request_processors.length === 0 && (
-                  <p className="text-sm text-gray-500 text-center py-3 bg-gray-50 rounded-xl">No request processors</p>
+                  <p className="text-sm text-gray-500 text-center py-4 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                    No request processors configured. Click "Add Processor" to add one.
+                  </p>
                 )}
               </div>
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-gray-700">Response Processors</label>
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-sm font-semibold text-gray-800">Response Processors</label>
                 <button
                   type="button"
                   onClick={() => addProcessor('response')}
-                  className="text-sm text-lime-600 hover:text-lime-700 font-medium flex items-center gap-1"
+                  className="text-sm text-green-600 hover:text-green-700 font-medium flex items-center gap-1 px-2 py-1 rounded hover:bg-green-50"
                 >
-                  <Plus size={16} /> Add
+                  <Plus size={16} /> Add Processor
                 </button>
               </div>
-              <div className="space-y-2">
-                {formData.response_processors.map((processor, idx) => (
-                  <div key={idx} className="flex items-center gap-2 p-3 bg-green-50 rounded-xl border border-green-100">
-                    <select
-                      value={processor.type}
-                      onChange={(e) => updateProcessor('response', idx, 'type', e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-lime-500"
-                    >
-                      {processorTypes.map(pt => (
-                        <option key={pt.value} value={pt.value}>{pt.label}</option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => removeProcessor('response', idx)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                ))}
+              <div className="space-y-3">
+                {formData.response_processors.map((processor, idx) => renderProcessorCard(processor, idx, 'response'))}
                 {formData.response_processors.length === 0 && (
-                  <p className="text-sm text-gray-500 text-center py-3 bg-gray-50 rounded-xl">No response processors</p>
+                  <p className="text-sm text-gray-500 text-center py-4 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                    No response processors configured. Click "Add Processor" to add one.
+                  </p>
                 )}
               </div>
             </div>
@@ -1334,7 +1550,7 @@ function ProviderModal({ provider, onClose, onSave }) {
   const selectedType = PROVIDER_TYPES.find(t => t.value === formData.provider_type);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
         <div className="p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-6">
@@ -1531,7 +1747,7 @@ function ExternalTestModal({ provider, token, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
         <div className="p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-2">Test {provider.name}</h2>

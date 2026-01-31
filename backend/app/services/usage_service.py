@@ -1,6 +1,6 @@
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, case
 from datetime import datetime, timedelta
 
 from backend.app.db.models import UsageLog, Tenant, APIKey
@@ -232,6 +232,207 @@ class UsageService:
             }
             for m in top_models
         ]
+
+    def get_usage_by_api_key(
+        self,
+        db: Session,
+        tenant_id: int,
+        days: int = 30,
+        limit: int = 20
+    ) -> List[Dict[str, Any]]:
+        from backend.app.db.models.api_key import APIKey
+        start_date = datetime.utcnow() - timedelta(days=days)
+        
+        stats = db.query(
+            UsageLog.api_key_id,
+            APIKey.name.label('key_name'),
+            func.count(UsageLog.id).label('requests'),
+            func.sum(UsageLog.total_tokens).label('tokens'),
+            func.sum(UsageLog.cost).label('cost'),
+            func.avg(UsageLog.latency_ms).label('avg_latency'),
+            func.count(case((UsageLog.status == 'success', 1))).label('success_count')
+        ).join(
+            APIKey, UsageLog.api_key_id == APIKey.id, isouter=True
+        ).filter(
+            UsageLog.tenant_id == tenant_id,
+            UsageLog.created_at >= start_date
+        ).group_by(UsageLog.api_key_id, APIKey.name).order_by(
+            desc(func.count(UsageLog.id))
+        ).limit(limit).all()
+        
+        return [
+            {
+                "api_key_id": s.api_key_id,
+                "key_name": s.key_name or f"Key #{s.api_key_id}",
+                "requests": s.requests,
+                "tokens": int(s.tokens or 0),
+                "cost": float(s.cost or 0),
+                "avg_latency_ms": float(s.avg_latency or 0),
+                "success_rate": round((s.success_count / s.requests * 100) if s.requests > 0 else 0, 1)
+            }
+            for s in stats
+        ]
+
+    def get_usage_by_user(
+        self,
+        db: Session,
+        tenant_id: int,
+        days: int = 30,
+        limit: int = 20
+    ) -> List[Dict[str, Any]]:
+        from backend.app.db.models.api_key import APIKey
+        from backend.app.db.models.user import User
+        start_date = datetime.utcnow() - timedelta(days=days)
+        
+        stats = db.query(
+            APIKey.user_id,
+            User.name.label('user_name'),
+            User.email.label('user_email'),
+            func.count(UsageLog.id).label('requests'),
+            func.sum(UsageLog.total_tokens).label('tokens'),
+            func.sum(UsageLog.cost).label('cost'),
+            func.avg(UsageLog.latency_ms).label('avg_latency')
+        ).join(
+            APIKey, UsageLog.api_key_id == APIKey.id
+        ).join(
+            User, APIKey.user_id == User.id, isouter=True
+        ).filter(
+            UsageLog.tenant_id == tenant_id,
+            UsageLog.created_at >= start_date
+        ).group_by(APIKey.user_id, User.name, User.email).order_by(
+            desc(func.count(UsageLog.id))
+        ).limit(limit).all()
+        
+        return [
+            {
+                "user_id": s.user_id,
+                "user_name": s.user_name or "Unknown",
+                "user_email": s.user_email or "",
+                "requests": s.requests,
+                "tokens": int(s.tokens or 0),
+                "cost": float(s.cost or 0),
+                "avg_latency_ms": float(s.avg_latency or 0)
+            }
+            for s in stats
+        ]
+
+    def get_usage_by_department(
+        self,
+        db: Session,
+        tenant_id: int,
+        days: int = 30
+    ) -> List[Dict[str, Any]]:
+        from backend.app.db.models.api_key import APIKey
+        from backend.app.db.models.user import User
+        from backend.app.db.models.organization import Department
+        start_date = datetime.utcnow() - timedelta(days=days)
+        
+        stats = db.query(
+            User.department_id,
+            Department.name.label('department_name'),
+            func.count(UsageLog.id).label('requests'),
+            func.sum(UsageLog.total_tokens).label('tokens'),
+            func.sum(UsageLog.cost).label('cost')
+        ).join(
+            APIKey, UsageLog.api_key_id == APIKey.id
+        ).join(
+            User, APIKey.user_id == User.id
+        ).join(
+            Department, User.department_id == Department.id, isouter=True
+        ).filter(
+            UsageLog.tenant_id == tenant_id,
+            UsageLog.created_at >= start_date
+        ).group_by(User.department_id, Department.name).order_by(
+            desc(func.sum(UsageLog.cost))
+        ).all()
+        
+        return [
+            {
+                "department_id": s.department_id,
+                "department_name": s.department_name or "Unassigned",
+                "requests": s.requests,
+                "tokens": int(s.tokens or 0),
+                "cost": float(s.cost or 0)
+            }
+            for s in stats
+        ]
+
+    def get_hourly_distribution(
+        self,
+        db: Session,
+        tenant_id: int,
+        days: int = 7
+    ) -> List[Dict[str, Any]]:
+        start_date = datetime.utcnow() - timedelta(days=days)
+        
+        stats = db.query(
+            func.extract('hour', UsageLog.created_at).label('hour'),
+            func.count(UsageLog.id).label('requests'),
+            func.avg(UsageLog.latency_ms).label('avg_latency')
+        ).filter(
+            UsageLog.tenant_id == tenant_id,
+            UsageLog.created_at >= start_date
+        ).group_by(
+            func.extract('hour', UsageLog.created_at)
+        ).order_by('hour').all()
+        
+        return [
+            {
+                "hour": int(s.hour),
+                "requests": s.requests,
+                "avg_latency_ms": float(s.avg_latency or 0)
+            }
+            for s in stats
+        ]
+
+    def get_error_breakdown(
+        self,
+        db: Session,
+        tenant_id: int,
+        days: int = 30
+    ) -> Dict[str, Any]:
+        start_date = datetime.utcnow() - timedelta(days=days)
+        
+        total = db.query(func.count(UsageLog.id)).filter(
+            UsageLog.tenant_id == tenant_id,
+            UsageLog.created_at >= start_date
+        ).scalar() or 0
+        
+        by_status = db.query(
+            UsageLog.status,
+            func.count(UsageLog.id).label('count')
+        ).filter(
+            UsageLog.tenant_id == tenant_id,
+            UsageLog.created_at >= start_date
+        ).group_by(UsageLog.status).all()
+        
+        status_breakdown = {s.status: s.count for s in by_status}
+        
+        return {
+            "total_requests": total,
+            "success": status_breakdown.get('success', 0),
+            "errors": total - status_breakdown.get('success', 0),
+            "cache_hits": status_breakdown.get('cache_hit', 0),
+            "by_status": status_breakdown
+        }
+
+    def get_detailed_stats(
+        self,
+        db: Session,
+        tenant_id: int,
+        days: int = 30
+    ) -> Dict[str, Any]:
+        """Get comprehensive statistics for the stats page."""
+        return {
+            "summary": self.get_usage_summary(db, tenant_id, days),
+            "top_models": self.get_top_models(db, tenant_id, days, limit=10),
+            "by_api_key": self.get_usage_by_api_key(db, tenant_id, days, limit=10),
+            "by_user": self.get_usage_by_user(db, tenant_id, days, limit=10),
+            "by_department": self.get_usage_by_department(db, tenant_id, days),
+            "hourly_distribution": self.get_hourly_distribution(db, tenant_id, min(days, 7)),
+            "error_breakdown": self.get_error_breakdown(db, tenant_id, days),
+            "usage_over_time": self.get_usage_over_time(db, tenant_id, days)
+        }
 
 
 usage_service = UsageService()

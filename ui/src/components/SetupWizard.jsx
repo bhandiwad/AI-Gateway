@@ -21,10 +21,11 @@ import {
 
 const STEPS = [
   { id: 'welcome', title: 'Welcome', icon: Sparkles },
-  { id: 'provider', title: 'Configure Provider', icon: Server },
-  { id: 'apikey', title: 'Create API Key', icon: Key },
-  { id: 'test', title: 'Test Connection', icon: Zap },
-  { id: 'complete', title: 'Complete', icon: CheckCircle },
+  { id: 'provider', title: 'Provider', icon: Server },
+  { id: 'guardrails', title: 'Guardrails', icon: Shield },
+  { id: 'apikey', title: 'API Key', icon: Key },
+  { id: 'test', title: 'Test', icon: Zap },
+  { id: 'complete', title: 'Done', icon: CheckCircle },
 ];
 
 const PROVIDERS = [
@@ -49,6 +50,8 @@ export default function SetupWizard({ isOpen, onClose, onComplete }) {
   const [copied, setCopied] = useState(false);
   const [existingProviders, setExistingProviders] = useState([]);
   const [existingApiKeys, setExistingApiKeys] = useState([]);
+  const [selectedGuardrail, setSelectedGuardrail] = useState('basic');
+  const [guardrailProfiles, setGuardrailProfiles] = useState([]);
 
   useEffect(() => {
     if (isOpen) {
@@ -58,12 +61,14 @@ export default function SetupWizard({ isOpen, onClose, onComplete }) {
 
   const checkExistingSetup = async () => {
     try {
-      const [providersRes, keysRes] = await Promise.all([
+      const [providersRes, keysRes, profilesRes] = await Promise.all([
         api.get('/admin/providers', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] })),
-        api.get('/admin/api-keys', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] }))
+        api.get('/admin/api-keys', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] })),
+        api.get('/admin/providers/profiles/list', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] }))
       ]);
       setExistingProviders(providersRes.data || []);
       setExistingApiKeys(keysRes.data || []);
+      setGuardrailProfiles(profilesRes.data || []);
     } catch (err) {
       console.error('Failed to check existing setup:', err);
     }
@@ -91,7 +96,7 @@ export default function SetupWizard({ isOpen, onClose, onComplete }) {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      setCurrentStep(2);
+      setCurrentStep(2); // Go to guardrails step
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to configure provider');
     } finally {
@@ -117,7 +122,7 @@ export default function SetupWizard({ isOpen, onClose, onComplete }) {
       });
       
       setCreatedApiKey(response.data.key || response.data.api_key);
-      setCurrentStep(3);
+      setCurrentStep(4); // Go to test step
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to create API key');
     } finally {
@@ -144,7 +149,7 @@ export default function SetupWizard({ isOpen, onClose, onComplete }) {
         message: response.data.choices?.[0]?.message?.content || 'Connection successful!'
       });
       
-      setTimeout(() => setCurrentStep(4), 1500);
+      setTimeout(() => setCurrentStep(5), 1500); // Go to complete step
     } catch (err) {
       setTestResult({
         success: false,
@@ -177,23 +182,77 @@ export default function SetupWizard({ isOpen, onClose, onComplete }) {
 
   const step = STEPS[currentStep];
 
+  const handleGuardrailSetup = async () => {
+    if (selectedGuardrail === 'skip') {
+      setCurrentStep(3); // Skip to API key
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const profileConfig = {
+        basic: {
+          name: 'Basic Protection',
+          description: 'PII detection and prompt injection prevention',
+          request_processors: [
+            { type: 'pii_detection', name: 'PII Detection', config: { action: 'redact' } },
+            { type: 'prompt_injection', name: 'Prompt Injection', config: { action: 'block' } }
+          ],
+          response_processors: []
+        },
+        enterprise: {
+          name: 'Enterprise Compliance',
+          description: 'Full compliance with PII, secrets, and content filtering',
+          request_processors: [
+            { type: 'pii_detection', name: 'PII Detection', config: { action: 'redact' } },
+            { type: 'prompt_injection', name: 'Prompt Injection', config: { action: 'block' } },
+            { type: 'secrets_detection', name: 'Secrets Detection', config: { action: 'block' } },
+            { type: 'toxicity_filter', name: 'Toxicity Filter', config: { action: 'block' } }
+          ],
+          response_processors: []
+        },
+        dpdp: {
+          name: 'DPDP Compliance (India)',
+          description: 'Digital Personal Data Protection Act compliance',
+          request_processors: [
+            { type: 'dpdp_compliance', name: 'DPDP Compliance', config: { action: 'redact' } },
+            { type: 'secrets_detection', name: 'Secrets Detection', config: { action: 'block' } }
+          ],
+          response_processors: []
+        }
+      };
+      
+      const config = profileConfig[selectedGuardrail];
+      if (config) {
+        await api.post('/admin/providers/profiles', config, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+      
+      setCurrentStep(3); // Go to API key step
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to create guardrail profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-blue-600 to-blue-700">
-          <div className="flex items-center gap-4">
-            <InfinitAILogo className="w-10 h-10" />
-            <div className="text-white">
-              <h2 className="text-xl font-bold">Setup Wizard</h2>
-              <p className="text-blue-100 text-sm">Get started with InfinitAI Gateway</p>
-            </div>
+        <div className="flex items-center justify-between p-4 border-b bg-white">
+          <div className="flex items-center gap-3">
+            <InfinitAILogo className="w-8 h-8" />
+            <h2 className="text-lg font-semibold text-gray-900">Quick Setup</h2>
           </div>
-          <button onClick={onClose} className="text-white/80 hover:text-white">
-            <X size={24} />
+          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
+            <X size={20} />
           </button>
         </div>
 
-        <div className="flex items-center justify-center gap-2 py-4 px-6 bg-gray-50 border-b overflow-x-auto">
+        <div className="flex items-center justify-center gap-1 py-3 px-4 bg-gray-50 border-b overflow-x-auto">
           {STEPS.map((s, idx) => (
             <button
               key={s.id}
@@ -323,6 +382,51 @@ export default function SetupWizard({ isOpen, onClose, onComplete }) {
 
           {currentStep === 2 && (
             <div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Choose Your Guardrails</h3>
+              <p className="text-gray-600 mb-6">Select a protection level for your AI requests. You can customize later.</p>
+              
+              <div className="grid gap-3">
+                {[
+                  { id: 'basic', name: 'Basic Protection', desc: 'PII detection + Prompt injection prevention', icon: '🛡️', color: 'blue' },
+                  { id: 'enterprise', name: 'Enterprise Compliance', desc: 'Full suite: PII, secrets, toxicity filtering', icon: '🏢', color: 'purple' },
+                  { id: 'dpdp', name: 'DPDP (India)', desc: 'Aadhaar, PAN, Passport, UPI protection', icon: '🇮🇳', color: 'orange' },
+                  { id: 'skip', name: 'Skip for now', desc: 'Set up guardrails later from the Guardrails page', icon: '⏭️', color: 'gray' },
+                ].map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setSelectedGuardrail(option.id)}
+                    className={`flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all ${
+                      selectedGuardrail === option.id
+                        ? `border-${option.color}-500 bg-${option.color}-50`
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    <span className="text-2xl">{option.icon}</span>
+                    <div>
+                      <div className="font-semibold text-gray-900">{option.name}</div>
+                      <div className="text-sm text-gray-500">{option.desc}</div>
+                    </div>
+                    {selectedGuardrail === option.id && (
+                      <CheckCircle className="ml-auto text-green-600" size={20} />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {guardrailProfiles.length > 0 && (
+                <div className="mt-4 p-3 bg-lime-50 border border-lime-200 rounded-lg">
+                  <p className="text-sm text-lime-800">
+                    <CheckCircle size={14} className="inline mr-1" />
+                    You already have {guardrailProfiles.length} guardrail profile(s) configured.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {currentStep === 3 && (
+            <div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">Create Your API Key</h3>
               <p className="text-gray-600 mb-6">Create an API key to authenticate your requests to the gateway.</p>
               
@@ -348,7 +452,7 @@ export default function SetupWizard({ isOpen, onClose, onComplete }) {
             </div>
           )}
 
-          {currentStep === 3 && (
+          {currentStep === 4 && (
             <div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">Test Your Connection</h3>
               <p className="text-gray-600 mb-6">Your API key has been created. Save it now, then test the connection.</p>
@@ -400,7 +504,7 @@ export default function SetupWizard({ isOpen, onClose, onComplete }) {
             </div>
           )}
 
-          {currentStep === 4 && (
+          {currentStep === 5 && (
             <div className="text-center py-8">
               <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle size={48} className="text-green-600" />
@@ -430,9 +534,9 @@ response = client.chat.completions.create(
           )}
         </div>
 
-        <div className="flex items-center justify-between p-6 border-t bg-gray-50">
+        <div className="flex items-center justify-between p-4 border-t bg-gray-50">
           <div>
-            {currentStep > 0 && currentStep < 4 && (
+            {currentStep > 0 && currentStep < 5 && (
               <button
                 onClick={() => setCurrentStep(currentStep - 1)}
                 className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900"
@@ -468,23 +572,34 @@ response = client.chat.completions.create(
                 disabled={loading || !selectedProvider || !providerApiKey}
                 className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
-                {loading ? 'Configuring...' : 'Configure Provider'}
+                {loading ? 'Configuring...' : 'Next: Guardrails'}
                 <ArrowRight size={18} />
               </button>
             )}
             
             {currentStep === 2 && (
               <button
-                onClick={handleCreateApiKey}
-                disabled={loading || !apiKeyName.trim()}
+                onClick={handleGuardrailSetup}
+                disabled={loading}
                 className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
-                {loading ? 'Creating...' : 'Create API Key'}
+                {loading ? 'Setting up...' : 'Next: API Key'}
                 <ArrowRight size={18} />
               </button>
             )}
             
             {currentStep === 3 && (
+              <button
+                onClick={handleCreateApiKey}
+                disabled={loading || !apiKeyName.trim()}
+                className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                {loading ? 'Creating...' : 'Create & Test'}
+                <ArrowRight size={18} />
+              </button>
+            )}
+            
+            {currentStep === 4 && (
               <button
                 onClick={handleTestConnection}
                 disabled={loading}
@@ -495,10 +610,10 @@ response = client.chat.completions.create(
               </button>
             )}
             
-            {currentStep === 4 && (
+            {currentStep === 5 && (
               <button
                 onClick={handleComplete}
-                className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
               >
                 Go to Playground
                 <ArrowRight size={18} />

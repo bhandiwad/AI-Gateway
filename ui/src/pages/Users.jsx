@@ -384,7 +384,12 @@ export default function Users() {
                 </button>
                 <button
                   onClick={showCreateModal ? createUser : updateUser}
-                  disabled={saving || !formData.email}
+                  disabled={
+                    saving || 
+                    !formData.email || 
+                    !formData.name ||
+                    (showCreateModal && !formData.password)
+                  }
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 >
                   {saving ? 'Saving...' : showCreateModal ? 'Create' : 'Save'}

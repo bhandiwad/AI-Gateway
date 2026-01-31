@@ -112,6 +112,8 @@ class APIKeyCache:
         Fetch from database with EAGER LOADING of all relationships.
         This prevents N+1 queries later.
         """
+        from datetime import datetime
+        
         api_key = db.query(APIKey).options(
             joinedload(APIKey.tenant),
             joinedload(APIKey.department).joinedload(Department.guardrail_profile),
@@ -124,6 +126,13 @@ class APIKeyCache:
         
         if not api_key or not api_key.tenant:
             return None
+        
+        # Update last_used_at timestamp
+        api_key.last_used_at = datetime.utcnow()
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
         
         return (api_key.tenant, api_key)
     

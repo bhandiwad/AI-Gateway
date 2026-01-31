@@ -60,13 +60,14 @@ class BudgetCheckRequest(BaseModel):
 async def list_budget_policies(
     scope_type: Optional[str] = None,
     scope_id: Optional[int] = None,
-    current_user = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """List all budget policies for the current tenant."""
+    tenant_id = int(current_user["sub"])
     service = BudgetEnforcementService(db)
     policies = service.get_budget_summary(
-        tenant_id=current_user.tenant_id,
+        tenant_id=tenant_id,
         scope_type=scope_type,
         scope_id=scope_id
     )
@@ -76,10 +77,12 @@ async def list_budget_policies(
 @router.post("/policies")
 async def create_budget_policy(
     policy: BudgetPolicyCreate,
-    current_user = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Create a new budget policy (disabled by default)."""
+    tenant_id = int(current_user["sub"])
+    user_id = current_user.get("user_id")
     service = BudgetEnforcementService(db)
     
     valid_scopes = ["tenant", "department", "team", "api_key", "user", "route", "model", "global"]
@@ -97,7 +100,7 @@ async def create_budget_policy(
         )
     
     new_policy = service.create_policy(
-        tenant_id=current_user.tenant_id,
+        tenant_id=tenant_id,
         name=policy.name,
         scope_type=policy.scope_type,
         scope_id=policy.scope_id,
@@ -106,7 +109,7 @@ async def create_budget_policy(
         hard_limit_usd=policy.hard_limit_usd,
         action_on_limit=policy.action_on_limit,
         enabled=policy.enabled,
-        created_by_user_id=current_user.id,
+        created_by_user_id=user_id,
         soft_threshold_pct=policy.soft_threshold_pct,
         warning_threshold_pct=policy.warning_threshold_pct,
         critical_threshold_pct=policy.critical_threshold_pct,
@@ -129,17 +132,18 @@ async def create_budget_policy(
 async def update_budget_policy(
     policy_id: int,
     updates: BudgetPolicyUpdate,
-    current_user = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Update an existing budget policy."""
+    tenant_id = int(current_user["sub"])
     service = BudgetEnforcementService(db)
     
     update_dict = updates.model_dump(exclude_none=True)
     
     updated_policy = service.update_policy(
         policy_id=policy_id,
-        tenant_id=current_user.tenant_id,
+        tenant_id=tenant_id,
         **update_dict
     )
     
@@ -162,15 +166,16 @@ async def update_budget_policy(
 @router.delete("/policies/{policy_id}")
 async def delete_budget_policy(
     policy_id: int,
-    current_user = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Delete a budget policy."""
+    tenant_id = int(current_user["sub"])
     service = BudgetEnforcementService(db)
     
     success = service.delete_policy(
         policy_id=policy_id,
-        tenant_id=current_user.tenant_id
+        tenant_id=tenant_id
     )
     
     if not success:
@@ -185,16 +190,17 @@ async def delete_budget_policy(
 @router.post("/policies/{policy_id}/toggle")
 async def toggle_budget_policy(
     policy_id: int,
-    current_user = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Toggle a budget policy on/off."""
+    tenant_id = int(current_user["sub"])
     service = BudgetEnforcementService(db)
     
     from backend.app.db.models import BudgetPolicy
     policy = db.query(BudgetPolicy).filter(
         BudgetPolicy.id == policy_id,
-        BudgetPolicy.tenant_id == current_user.tenant_id
+        BudgetPolicy.tenant_id == tenant_id
     ).first()
     
     if not policy:
@@ -204,7 +210,7 @@ async def toggle_budget_policy(
         )
     
     new_state = not policy.enabled
-    service.update_policy(policy_id, current_user.tenant_id, enabled=new_state)
+    service.update_policy(policy_id, tenant_id, enabled=new_state)
     
     return {
         "message": f"Budget policy {'enabled' if new_state else 'disabled'}",
@@ -216,14 +222,15 @@ async def toggle_budget_policy(
 @router.post("/check")
 async def check_budget(
     request: BudgetCheckRequest,
-    current_user = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Check if a request would be allowed under current budget policies."""
+    tenant_id = int(current_user["sub"])
     service = BudgetEnforcementService(db)
     
     result = service.check_budget(
-        tenant_id=current_user.tenant_id,
+        tenant_id=tenant_id,
         model=request.model,
         estimated_cost=request.estimated_cost,
         api_key_id=request.api_key_id,
@@ -238,31 +245,33 @@ async def check_budget(
 
 @router.get("/scope-options")
 async def get_scope_options(
-    current_user = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Get available scope options for budget policies."""
     from backend.app.db.models import Department, Team, APIKey, User
     from backend.app.db.models.provider_config import APIRoute
     
+    tenant_id = int(current_user["sub"])
+    
     departments = db.query(Department).filter(
-        Department.tenant_id == current_user.tenant_id
+        Department.tenant_id == tenant_id
     ).all()
     
     teams = db.query(Team).filter(
-        Team.tenant_id == current_user.tenant_id
+        Team.tenant_id == tenant_id
     ).all()
     
     api_keys = db.query(APIKey).filter(
-        APIKey.tenant_id == current_user.tenant_id
+        APIKey.tenant_id == tenant_id
     ).all()
     
     users = db.query(User).filter(
-        User.tenant_id == current_user.tenant_id
+        User.tenant_id == tenant_id
     ).all()
     
     routes = db.query(APIRoute).filter(
-        APIRoute.tenant_id == current_user.tenant_id
+        APIRoute.tenant_id == tenant_id
     ).all()
     
     return {

@@ -14,7 +14,8 @@ import {
   GitBranch,
   Building2,
   Bell,
-  BookOpen
+  BookOpen,
+  BarChart3
 } from 'lucide-react';
 import { useAuth, PERMISSIONS } from '../contexts/AuthContext';
 import InfinitAILogo from './InfinitAILogo';
@@ -30,6 +31,7 @@ const navItems = [
   { path: '/organization', label: 'Organization', icon: Building2, permission: PERMISSIONS.USERS_VIEW },
   { path: '/alerts', label: 'Alerts', icon: Bell, permission: PERMISSIONS.SETTINGS_VIEW },
   { path: '/billing', label: 'Billing', icon: DollarSign, permission: PERMISSIONS.BILLING_VIEW },
+  { path: '/stats', label: 'Statistics', icon: BarChart3, permission: PERMISSIONS.DASHBOARD_VIEW },
   { path: '/audit-logs', label: 'Audit Logs', icon: FileText, permission: PERMISSIONS.AUDIT_VIEW },
   { path: '/tenants', label: 'Tenants', icon: Building2, adminOnly: true },
   { path: '/settings', label: 'Settings', icon: Settings, permission: PERMISSIONS.SETTINGS_VIEW },

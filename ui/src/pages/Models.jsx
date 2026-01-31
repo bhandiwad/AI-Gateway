@@ -248,6 +248,11 @@ export default function Models() {
 
   const providers = [...new Set(models.map(m => m.provider))];
 
+  // Determine which providers have at least one enabled model
+  const activeProviders = new Set(
+    models.filter(m => m.is_enabled).map(m => m.provider)
+  );
+
   const filteredModels = models.filter(model => {
     const matchesSearch = model.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          model.id?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -257,6 +262,27 @@ export default function Models() {
                          (filterStatus === 'disabled' && !model.is_enabled) ||
                          (filterStatus === 'custom' && model.is_custom);
     return matchesSearch && matchesProvider && matchesStatus;
+  });
+
+  // Sort models: active providers first, then by provider name, then by enabled status
+  const sortedModels = [...filteredModels].sort((a, b) => {
+    const aActive = activeProviders.has(a.provider);
+    const bActive = activeProviders.has(b.provider);
+    
+    // Active providers first
+    if (aActive && !bActive) return -1;
+    if (!aActive && bActive) return 1;
+    
+    // Then by provider name
+    if (a.provider !== b.provider) {
+      return a.provider.localeCompare(b.provider);
+    }
+    
+    // Then enabled models first within same provider
+    if (a.is_enabled && !b.is_enabled) return -1;
+    if (!a.is_enabled && b.is_enabled) return 1;
+    
+    return 0;
   });
 
   const getProviderColor = (provider) => {
@@ -283,7 +309,7 @@ export default function Models() {
   };
 
   const ModelFormModal = ({ isEdit, onSubmit, onClose }) => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">
@@ -364,7 +390,7 @@ export default function Models() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Input Cost ($/1K tokens)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Input Cost (₹/1K tokens)</label>
                   <input
                     type="number"
                     step="0.0001"
@@ -374,7 +400,7 @@ export default function Models() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Output Cost ($/1K tokens)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Output Cost (₹/1K tokens)</label>
                   <input
                     type="number"
                     step="0.0001"
@@ -558,7 +584,7 @@ export default function Models() {
         ) : (
           <>
             <p className="text-sm text-gray-500 mb-4">
-              Showing {filteredModels.length} of {models.length} models
+              Showing {sortedModels.length} of {models.length} models
               {models.filter(m => m.is_enabled).length > 0 && (
                 <span className="ml-2 text-green-600">
                   ({models.filter(m => m.is_enabled).length} enabled)
@@ -579,7 +605,7 @@ export default function Models() {
                     ref={provided.innerRef}
                     className="space-y-3"
                   >
-                    {filteredModels.map((model, index) => (
+                    {sortedModels.map((model, index) => (
                       <Draggable 
                         key={model.id} 
                         draggableId={model.id} 

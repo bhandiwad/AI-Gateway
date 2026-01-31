@@ -16,6 +16,7 @@ from backend.app.services.guardrail_resolver import guardrail_resolver
 from backend.app.services.tenancy_service import tenancy_service
 from backend.app.services.usage_service import usage_service
 from backend.app.services.budget_enforcement_service import BudgetEnforcementService
+from backend.app.services.audit_service import audit_service
 from backend.app.core.api_key_cache import api_key_cache
 from backend.app.core.security import hash_api_key
 from backend.app.schemas.chat import (
@@ -164,6 +165,33 @@ async def chat_completions(
                 detail=profile_result.message
             )
         messages_dict = profile_result.processed_messages or messages_dict
+        
+        # Check files/images in messages for guardrail violations
+        from backend.app.services.file_guardrails_service import apply_guardrails_to_message_files
+        files_passed, files_message, file_results = apply_guardrails_to_message_files(
+            messages=messages_dict,
+            profile=guardrail_profile,
+            tenant_id=tenant.id,
+            scan_images=True
+        )
+        if not files_passed:
+            usage_service.log_usage(
+                db=db,
+                tenant_id=tenant.id,
+                api_key_id=api_key.id,
+                request_id=request_id,
+                endpoint="chat/completions",
+                model=request.model,
+                provider="blocked",
+                status="blocked",
+                error_message=f"File content violation: {files_message}",
+                guardrail_triggered="file_scan",
+                guardrail_action="block"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"File content blocked: {files_message}"
+            )
     else:
         guardrail_result = guardrails_service.validate_request(
             messages_dict,
@@ -221,6 +249,24 @@ async def chat_completions(
             cache_hit = True
             latency_ms = int((time.time() - start_time) * 1000)
             
+            # Estimate tokens saved from cache hit
+            cached_usage = cached_response.get("usage", {})
+            tokens_saved = cached_usage.get("total_tokens", 0)
+            if tokens_saved == 0:
+                # Estimate based on typical response
+                tokens_saved = cached_usage.get("prompt_tokens", 0) + cached_usage.get("completion_tokens", 0)
+            
+            # Estimate cost saved (rough estimate based on model pricing)
+            cost_per_1k = 0.002  # Default estimate
+            if "gpt-4" in model_to_use:
+                cost_per_1k = 0.03
+            elif "claude" in model_to_use:
+                cost_per_1k = 0.015
+            cost_saved = (tokens_saved / 1000) * cost_per_1k
+            
+            # Record savings
+            semantic_cache.record_cache_savings(tokens_saved, cost_saved)
+            
             if settings.ENABLE_TELEMETRY:
                 from backend.app.telemetry import record_llm_metrics
                 record_llm_metrics(
@@ -250,6 +296,7 @@ async def chat_completions(
             response = cached_response.copy()
             response["cache_hit"] = True
             response["similarity"] = cached_response.get("similarity", 1.0)
+            response["tokens_saved"] = tokens_saved
             return response
     
     try:
@@ -387,6 +434,17 @@ async def chat_completions(
             cost=result["cost"],
             latency_ms=result["latency_ms"],
             status="success"
+        )
+        
+        # Log to audit trail
+        audit_service.log_api_request(
+            db=db,
+            tenant_id=tenant.id,
+            api_key_id=api_key.id,
+            endpoint="chat/completions",
+            model=result["model"],
+            tokens=result["total_tokens"],
+            cost=result["cost"]
         )
         
         tenancy_service.update_tenant_spend(db, tenant.id, result["cost"])
