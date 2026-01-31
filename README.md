@@ -10,7 +10,7 @@
 
 ## Documentation
 
-� **[Read the full documentation →](docs/index.md)**
+**[Read the full documentation →](docs/index.md)**
 
 | Section | Description |
 |---------|-------------|
@@ -36,7 +36,7 @@ docker-compose up -d
 curl http://localhost:8000/health
 ```
 
-**That's it!** 🎉
+**That's it!**
 
 - **Dashboard**: http://localhost
 - **API**: http://localhost:8000
@@ -65,7 +65,7 @@ curl http://localhost:8000/api/v1/chat/completions \
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -103,7 +103,7 @@ curl http://localhost:8000/api/v1/chat/completions \
 
 ---
 
-## 📖 Documentation
+## Documentation
 
 | Document | Description |
 |----------|-------------|
@@ -119,29 +119,29 @@ curl http://localhost:8000/api/v1/chat/completions \
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-### 🛡️ Enterprise Guardrails
+### Enterprise Guardrails
 - **PII Detection & Redaction** - Email, phone, SSN, Aadhaar, PAN, credit cards
 - **Compliance Processors** - DPDP, GDPR, HIPAA, PCI-DSS compliance checks
 - **Prompt Injection Detection** - Block malicious prompt manipulation
 - **Secrets Detection** - Prevent API keys, tokens from leaking
 - **File Content Scanning** - Apply guardrails to uploaded PDFs, DOCX, images (OCR)
 
-### 📊 Statistics & Analytics
+### Statistics & Analytics
 - **Comprehensive Dashboard** - Requests, tokens, costs (₹ INR)
 - **Per-User/Department Analytics** - Track usage by user, team, department
 - **API Key Metrics** - Hits, success rates per API key
 - **Model Usage** - Top models, provider breakdown
 - **Hourly Distribution** - Request patterns over time
 
-### ⚡ Prompt Caching
+### Prompt Caching
 - **Semantic Cache** - Reuse responses for similar prompts (92% similarity)
 - **Token Savings Tracking** - See how many tokens saved
 - **Cost Savings** - Track money saved from cache hits
 - **Cache Management** - View stats, clear cache via UI
 
-### 🔀 Intelligent Routing
+### Intelligent Routing
 - **Multi-Provider Support** - OpenAI, Anthropic, Google, Azure, AWS Bedrock
 - **Load Balancing** - Round-robin, weighted, least-latency
 - **Circuit Breaker** - Automatic failover on provider errors
@@ -149,7 +149,7 @@ curl http://localhost:8000/api/v1/chat/completions \
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -167,7 +167,7 @@ See [Configuration Guide](docs/CONFIGURATION.md) for complete reference.
 
 ---
 
-## 📡 API Reference
+## API Reference
 
 ### Authentication
 
@@ -240,7 +240,7 @@ Full API documentation available at `/docs` (Swagger UI) or `/redoc` (ReDoc).
 
 ---
 
-## 🧪 Testing
+## Testing
 
 ```bash
 # Install test dependencies
@@ -275,7 +275,7 @@ pytest -n auto
 
 ---
 
-## 🚢 Deployment
+## Deployment
 
 ### Docker Compose (Development/Staging)
 
@@ -301,7 +301,7 @@ kubectl get pods -n ai-gateway
 
 ---
 
-## 🔒 Security
+## Security
 
 ### Reporting Vulnerabilities
 
@@ -319,7 +319,7 @@ Please report security vulnerabilities to security@your-org.com. Do not create p
 
 ---
 
-## 📊 Monitoring
+## Monitoring
 
 ### Health Checks
 
@@ -342,7 +342,7 @@ GET /api/v1/admin/features/status
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -359,13 +359,13 @@ GET /api/v1/admin/features/status
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
 - [React](https://reactjs.org/) - Frontend library
@@ -375,5 +375,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 <div align="center">
-Made with ❤️ by the AI Gateway Team
+Made by the AI Gateway Team
 </div>
